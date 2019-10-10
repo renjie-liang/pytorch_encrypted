@@ -69,27 +69,27 @@ class Protocol(ABC):
 # 	return __PROTOCOL__
 
 
-# def memoize(func: Callable) -> Callable:
-# 	"""
-# 	memoize(func) -> Callable
+def memoize(func: Callable) -> Callable:
+	"""
+	memoize(func) -> Callable
 
-# 	Decorates a function for memoization, which explicitly caches the function's
-# 	output.
+	Decorates a function for memoization, which explicitly caches the function's
+	output.
 
-# 	:param Callable func: The function to memoize
-# 	"""
-# 	@functools.wraps(func)
-# 	def cache_nodes(self: Protocol, *args: Any, **kwargs: Any) -> AbstractTensor:
-# 		args = tuple(tuple(x) if isinstance(x, list) else x for x in args)
-# 		node_key = (func.__name__, args, tuple(sorted(kwargs.items())))
+	:param Callable func: The function to memoize
+	"""
+	@functools.wraps(func)
+	def cache_nodes(self: Protocol, *args: Any, **kwargs: Any) -> AbstractTensor:
+		args = tuple(tuple(x) if isinstance(x, list) else x for x in args)
+		node_key = (func.__name__, args, tuple(sorted(kwargs.items())))
 
-# 		cached_result = nodes.get(node_key, None)
-# 		if cached_result is not None:
-# 			return cached_result
+		cached_result = nodes.get(node_key, None)
+		if cached_result is not None:
+			return cached_result
 
-# 		result = func(self, *args, **kwargs)
+		result = func(self, *args, **kwargs)
 
-# 		nodes[node_key] = result
-# 		return result
+		nodes[node_key] = result
+		return result
 
-# 	return cache_nodes
+	return cache_nodes

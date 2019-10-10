@@ -76,9 +76,9 @@ class AbstractFactory(abc.ABC):
 	 # def placeholder(self, shape):
 		#  """ Create a placeholder of this data type. """
 
-	 # @abc.abstractmethod
-	 # def sample_uniform(self, shape,minval: Optional[int] = None, maxval: Optional[int] = None):
-		#  """ Sample uniform random value of this data type. """
+	 @abc.abstractmethod
+	 def sample_uniform(self, shape,minval: Optional[int] = None, maxval: Optional[int] = None):
+		 """ Sample uniform random value of this data type. """
 
 	 # @abc.abstractmethod
 	 # def sample_bounded(self, shape, bitlength: int):

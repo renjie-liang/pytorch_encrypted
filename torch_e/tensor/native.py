@@ -32,7 +32,9 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 				return DenseTensor(value)
 
 			if isinstance(value, np.ndarray):
-				value = torch.from_numpy(value, dtype=self.native_type)
+				value = torch.from_numpy(value)
+				value = value.to(self.native_type)
+
 				return DenseTensor(value)
 
 			raise TypeError("Don't know how to handle {}".format(type(value)))
@@ -66,17 +68,28 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		# def placeholder(self, shape):
 		# 	return Placeholder(shape)
 
-		# @property
-		# def min(self):
-		# 	if EXPLICIT_MODULUS is not None:
-		# 		return 0
-		# 	return NATIVE_TYPE.min
+		@property
+		def min(self):
+			if EXPLICIT_MODULUS is not None:
+				return 0
+			if NATIVE_TYPE is torch.int32:
+				return -(2 ** 31)
+			elif NATIVE_TYPE is torch.int64:
+				return -(2 ** 63)
 
-		# @property
-		# def max(self):
-		# 	if EXPLICIT_MODULUS is not None:
-		# 		return EXPLICIT_MODULUS
-		# 	return NATIVE_TYPE.max
+
+		@property
+		def max(self):
+			if EXPLICIT_MODULUS is not None:
+				return EXPLICIT_MODULUS
+
+			if NATIVE_TYPE is torch.int32:
+				return (2 ** 31) - 1 
+			elif NATIVE_TYPE is torch.int64:
+				return  (2 ** 63) - 1 
+
+
+
 
 		@property
 		def modulus(self) -> int:
@@ -87,38 +100,22 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			elif NATIVE_TYPE is torch.int64:
 				return 2 ** 64
 
-
 		@property
 		def native_type(self):
 			return NATIVE_TYPE
 
-		# def sample_uniform(self,
-		# 									 shape,
-		# 									 minval: Optional[int] = None,
-		# 									 maxval: Optional[int] = None):
-		# 	minval = minval or self.min
-		# 	# TODO(Morten) believe this should be native_type.max+1
-		# 	maxval = maxval or self.max
+		def sample_uniform(self, shape, minval: Optional[int] = None, maxval: Optional[int] = None):
+			minval = minval or self.min
+			# TODO(Morten) believe this should be native_type.max+1
+			maxval = maxval or self.max
 
-		# 	if secure_random.supports_seeded_randomness():
-		# 		seed = secure_random.secure_seed()
-		# 		return UniformTensor(shape=shape,
-		# 												 seed=seed,
-		# 												 minval=minval,
-		# 												 maxval=maxval)
+			value = torch.randint(low=minval , high = maxval, size = shape, dtype=NATIVE_TYPE)
 
-		# 	if secure_random.supports_secure_randomness():
-		# 		sampler = secure_random.random_uniform
-		# 	else:
-		# 		sampler = tf.random_uniform
-		# 	value = sampler(
-		# 			shape=shape,
-		# 			minval=minval,
-		# 			maxval=maxval,
-		# 			dtype=NATIVE_TYPE
-		# 	)
-		# 	return DenseTensor(value)
+			return DenseTensor(value)
 
+
+		def sample_uniform_mask(self, shape, minval: Optional[int] = None,  maxval: Optional[int] = None):
+			pass
 		# def sample_bounded(self, shape, bitlength: int):
 		# 	maxval = 2 ** bitlength
 		# 	assert maxval <= self.max
@@ -344,11 +341,10 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		# 	return factory.tensor(tf.cast(tf.equal(self.value, 0),
 		# 																dtype=factory.native_type))
 
-		# def equal(self, other, factory=None):
-		# 	x, y = _lift(self, other)
-		# 	factory = factory or FACTORY
-		# 	return factory.tensor(tf.cast(tf.equal(x.value, y.value),
-		# 																dtype=factory.native_type))
+		def equal(self, other, factory=None):
+			x, y = _lift(self, other)
+			factory = factory or FACTORY
+			return factory.tensor(x.value == y.value)
 
 		# def truncate(self, amount, base=2):
 		# 	if base == 2:

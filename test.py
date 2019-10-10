@@ -35,8 +35,9 @@ x = x.reshape(1,1)
 
 # from torch_e.tensor import native
 # int32factory = native.native_factory(torch.int32)
+# sample = int32factory.sample_uniform([2,2])
 # print(int32factory.modulus)
-
+# print(sample.value)
 from torch_e.protocol.pond import pond
 from torch_e.protocol.pond.pond import Pond
 prot = Pond()
@@ -45,10 +46,33 @@ prot.server_1.device_name = 'cpu'
 prot.triple_source.device_name = 'cpu'
 
 
-
 # TestPond
 
-print(prot)
-expected = np.array([1234567.9875])
-x = prot.define_constant(expected)
-print(x.constant_on_0.value)
+# print(prot)
+expected = np.array([1,565564])
+public_x = prot.define_from_numpy(expected)
+# print(x.constant_on_0.value)
+# print(x.constant_on_0.shape)
+
+
+private_x = prot.define_private_variable(expected)
+
+# print(private_x.share0.value)
+# print(private_x.share1.value)
+
+# public_x = private_x.reveal()
+
+# print(public_x.value_on_0.value)
+
+# TestPondPublicEqual
+
+x = np.array([100, 200, 100, 300])
+y = np.array([100, 100, 100, 200])
+
+public_x = prot.numpy_to_public(x)
+public_y = prot.numpy_to_public(y)
+
+
+public_equal = prot.equal(public_x, public_y)
+print(public_equal.value_on_0.value)
+
