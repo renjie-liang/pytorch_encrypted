@@ -44,12 +44,13 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 
 		# 	raise TypeError("Don't know how to handle {}".format(type(value)))
 
-		# def constant(self, value):
-		# 	if isinstance(value, np.ndarray):
-		# 		value = torch.from_numpy(value, dtype=self.native_type)
-		# 		return DenseTensor(value) ###
+		def constant(self, value):
+			if isinstance(value, np.ndarray):
+				value = torch.from_numpy(value)
+				value = value.to(self.native_type)
+				return DenseTensor(value) ###
 
-		# 	raise TypeError("Don't know how to handle {}".format(type(value)))
+			raise TypeError("Don't know how to handle {}".format(type(value)))
 
 		# def variable(self, initial_value):
 
@@ -81,7 +82,6 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		def modulus(self) -> int:
 			if EXPLICIT_MODULUS is not None:
 				return EXPLICIT_MODULUS
-			return 		
 			if NATIVE_TYPE is torch.int32:
 				return 2 ** 32
 			elif NATIVE_TYPE is torch.int64:
@@ -387,6 +387,8 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		def support(self):
 			return [self._value]
 
+		def to(self, device = None):
+			self._value.to(device)
 	# class UniformTensor(Tensor):
 	# 	"""Class representing a uniform-random, lazily sampled tensor.
 

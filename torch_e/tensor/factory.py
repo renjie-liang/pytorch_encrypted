@@ -64,9 +64,9 @@ class AbstractFactory(abc.ABC):
 	 def tensor(self, value: Union[torch.Tensor, np.ndarray]):
 		 """ Wrap raw `value` in this data type as a tensor. """
 
-	 # @abc.abstractmethod
-	 # def constant(self, value: np.ndarray):
-		#  """ Create a constant of this data type using raw `value`. """
+	 @abc.abstractmethod
+	 def constant(self, value: np.ndarray):
+		 """ Create a constant of this data type using raw `value`. """
 
 	 # @abc.abstractmethod
 	 # def variable(self, initial_value):

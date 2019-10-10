@@ -26,7 +26,7 @@ from ...tensor.factory import (
 )
 from ...tensor.fixed import FixedpointConfig, _validate_fixedpoint_config
 # from ...tensor import int100factory, fixed100
-from ...tensor import int64factory#, fixed64
+from ...tensor import int64factory, fixed64
 # from ...player import Player
 from ...config import get_config, pytorch_supports_int64
 # from ...queue.fifo import AbstractFIFOQueue
@@ -39,7 +39,7 @@ from .triple_sources import OnlineTripleSource
 # TFEPublicTensor = NewType("TFEPublicTensor", "PondPublicTensor")
 # TFETensor = Union[TFEPublicTensor, "PondPrivateTensor", "PondMaskedTensor"]
 # TFEInputter = Callable[[], Union[List[tf.Tensor], tf.Tensor]]
-# TF_INT_TYPES = [tf.int8, tf.int16, tf.int32, tf.int64]
+TF_INT_TYPES = [torch.int8, torch.int16, torch.int32, torch.int64]
 
 # _initializers = list()
 # _THISMODULE = sys.modules[__name__]
@@ -87,69 +87,69 @@ class Pond(Protocol):
 			if pytorch_supports_int64():
 				tensor_factory = int64factory
 
-				print("rrrrrr")
-				input()
-## ------------------testing here ------------------###
 
 			else:
-				logging.warning(
-						"Falling back to using int100 tensors due to lack of int64 "
-						"support. Performance may be improved by installing a version of "
-						"TensorFlow supporting this (1.13+ or custom build).")
-				tensor_factory = int100factory
+				pass
+				# logging.warning(
+				# 		"Falling back to using int100 tensors due to lack of int64 "
+				# 		"support. Performance may be improved by installing a version of "
+				# 		"TensorFlow supporting this (1.13+ or custom build).")
+				# tensor_factory = int100factory
 
 		if fixedpoint_config is None:
 			if tensor_factory is int64factory:
 				fixedpoint_config = fixed64
-			elif tensor_factory is int100factory:
-				fixedpoint_config = fixed100
+			# elif tensor_factory is int100factory:
+			# 	fixedpoint_config = fixed100
 			else:
 				raise ValueError(("Don't know how to pick fixedpoint configuration "
 													"for tensor type {}").format(tensor_factory))
 
+
 		_validate_fixedpoint_config(fixedpoint_config, tensor_factory)
 		self.fixedpoint_config = fixedpoint_config
 		self.tensor_factory = tensor_factory
+## ------------------testing here ------------------###
 
-# 	def define_constant(
-# 			self,
-# 			value: np.ndarray,
-# 			apply_scaling: bool = True,
-# 			name: Optional[str] = None,
-# 			factory: Optional[AbstractFactory] = None,
-# 	):
-# 		"""
-# 		define_constant(value, apply_scaling, name, factory) -> PondConstant
+	def define_constant(
+			self,
+			value: np.ndarray,
+			apply_scaling: bool = True,
+			name: Optional[str] = None,
+			factory: Optional[AbstractFactory] = None,
+	):
+		"""
+		define_constant(value, apply_scaling, name, factory) -> PondConstant
 
-# 		Define a constant to use in computation.
+		Define a constant to use in computation.
 
-# 		.. code-block:: python
+		.. code-block:: python
 
-# 				x = prot.define_constant(np.array([1,2,3,4]), apply_scaling=False)
+				x = prot.define_constant(np.array([1,2,3,4]), apply_scaling=False)
 
-# 		:See: tf.constant
+		:See: tf.constant
 
-# 		:param np.ndarray value: The value to define as a constant.
-# 		:param bool apply_scaling: Whether or not to scale the value.
-# 		:param str name: What name to give to this node in the graph.
-# 		:param AbstractFactory factory: Which tensor type to represent this value
-# 				with.
-# 		"""
-# 		assert isinstance(value, np.ndarray), type(value)
+		:param np.ndarray value: The value to define as a constant.
+		:param bool apply_scaling: Whether or not to scale the value.
+		:param str name: What name to give to this node in the graph.
+		:param AbstractFactory factory: Which tensor type to represent this value
+				with.
+		"""
+		assert isinstance(value, np.ndarray), type(value)
 
-# 		factory = factory or self.tensor_factory
+		factory = factory or self.tensor_factory
 
-# 		v = self._encode(value, apply_scaling)
+		v = self._encode(value, apply_scaling)
 
-# 		with tf.name_scope("constant{}".format("-" + name if name else "")):
+		print(self.server_0.device_name)
+		x_on_0 = factory.constant(v)
+		x_on_0.to(self.server_0.device_name)
 
-# 			with tf.device(self.server_0.device_name):
-# 				x_on_0 = factory.constant(v)
+		x_on_1 = factory.constant(v)
+		x_on_1.to(self.server_1.device_name)
 
-# 			with tf.device(self.server_1.device_name):
-# 				x_on_1 = factory.constant(v)
 
-# 		return PondConstant(self, x_on_0, x_on_1, apply_scaling)
+		return PondConstant(self, x_on_0, x_on_1, apply_scaling)
 
 # 	def define_public_placeholder(
 # 			self,
@@ -703,43 +703,41 @@ class Pond(Protocol):
 # 	def clear_initializers(self) -> None:
 # 		del _initializers[:]
 
-# 	def _encode(self,
-# 							rationals: Union[tf.Tensor, np.ndarray],
-# 							apply_scaling: bool,
-# 							tf_int_type=None,
-# 							) -> Union[tf.Tensor, np.ndarray]:
-# 		"""
-# 		Encode tensor of rational numbers into tensor of ring elements. Output is
-# 		of same type as input to allow function to be used for constants.
-# 		"""
+	def _encode(self,
+				rationals: Union[torch.Tensor, np.ndarray],
+				apply_scaling: bool,
+				tf_int_type=None,
+				) -> Union[torch.Tensor, np.ndarray]:
+		"""
+		Encode tensor of rational numbers into tensor of ring elements. Output is
+		of same type as input to allow function to be used for constants.
+		"""
+		# we first scale as needed
+		# if apply_scaling:
+		# 	scaled = rationals * self.fixedpoint_config.scaling_factor
+		# else:
+		# 	scaled = rationals
+		scaled = rationals
 
-# 		with tf.name_scope("encode"):
 
-# 			# we first scale as needed
 
-# 			if apply_scaling:
-# 				scaled = rationals * self.fixedpoint_config.scaling_factor
-# 			else:
-# 				scaled = rationals
 
-# 			# and then we round to integers
+		# and then we round to integers
 
-# 			if isinstance(scaled, np.ndarray):
-# 				integers = scaled.astype(np.int64)
+		if isinstance(scaled, np.ndarray):
+			integers = scaled.astype(np.int64)
 
-# 			elif isinstance(scaled, tf.Tensor):
-# 				tf_int_type = tf_int_type or (scaled.dtype
-# 																			if scaled.dtype in TF_INT_TYPES
-# 																			else self.tensor_factory.native_type)
-# 				assert tf_int_type in TF_INT_TYPES
-# 				integers = tf.cast(scaled, dtype=tf_int_type)
+		elif isinstance(scaled, torch.Tensor):
+			tf_int_type = tf_int_type or (scaled.dtype if scaled.dtype in TF_INT_TYPES else self.tensor_factory.native_type)
+			assert tf_int_type in TF_INT_TYPES
+			integers = torch.to(tf_int_type)
 
-# 			else:
-# 				raise TypeError("Don't know how to encode {}".format(type(rationals)))
+		else:
+			raise TypeError("Don't know how to encode {}".format(type(rationals)))
 
-# 			assert type(rationals) == type(integers), (type(rationals), # pylint: disable=unidiomatic-typecheck
-# 																								 type(integers))
-# 			return integers
+		assert type(rationals) == type(integers), (type(rationals), # pylint: disable=unidiomatic-typecheck
+																type(integers))
+		return integers
 
 # 	@memoize
 # 	def _decode(self,
@@ -1584,38 +1582,38 @@ class Pond(Protocol):
 # #
 
 
-# class PondTensor(abc.ABC):
-# 	"""
-# 	This class functions mostly as a convenient way of exposing operations
-# 	directly on the various tensor objects, ie allowing one to write `x + y`
-# 	instead of `prot.add(x, y)`. Since this functionality is shared among all
-# 	tensors we put it in this superclass.
+class PondTensor(abc.ABC):
+	"""
+	This class functions mostly as a convenient way of exposing operations
+	directly on the various tensor objects, ie allowing one to write `x + y`
+	instead of `prot.add(x, y)`. Since this functionality is shared among all
+	tensors we put it in this superclass.
 
-# 	This class should never be instantiated on its own.
-# 	Instead you should use your chosen protocols factory methods::
+	This class should never be instantiated on its own.
+	Instead you should use your chosen protocols factory methods::
 
-# 			x = prot.define_private_input(tf.constant(np.array([1,2,3,4])))
-# 			y = prot.define_public_input(tf.constant(np.array([4,5,6,7])))
+			x = prot.define_private_input(tf.constant(np.array([1,2,3,4])))
+			y = prot.define_public_input(tf.constant(np.array([4,5,6,7])))
 
-# 			z = x + y
+			z = x + y
 
-# 			with config.Session() as sess:
-# 					answer = z.reveal().eval(sess)
+			with config.Session() as sess:
+					answer = z.reveal().eval(sess)
 
-# 					print(answer) # => [5, 7, 9, 11]
-# 	"""
+					print(answer) # => [5, 7, 9, 11]
+	"""
 
-# 	def __init__(self, prot, is_scaled):
-# 		self.prot = prot
-# 		self.is_scaled = is_scaled
+	def __init__(self, prot, is_scaled):
+		self.prot = prot
+		self.is_scaled = is_scaled
 
-# 	@property
-# 	@abc.abstractmethod
-# 	def shape(self) -> List[int]:
-# 		"""
-# 		:rtype: List[int]
-# 		:returns: The shape of this tensor.
-# 		"""
+	@property
+	@abc.abstractmethod
+	def shape(self) -> List[int]:
+		"""
+		:rtype: List[int]
+		:returns: The shape of this tensor.
+		"""
 
 # 	@property
 # 	@abc.abstractmethod
@@ -1796,37 +1794,37 @@ class Pond(Protocol):
 # 		return self.prot.reduce_max(self, axis)
 
 
-# class PondPublicTensor(PondTensor):
-# 	"""
-# 	This class represents a public tensor, known by at least the two servers
-# 	but potentially known by more. Although there is only a single value we
-# 	replicate it on both servers to avoid sending it from one to the other
-# 	in the operations where it's needed by both (eg multiplication).
-# 	"""
+class PondPublicTensor(PondTensor):
+	"""
+	This class represents a public tensor, known by at least the two servers
+	but potentially known by more. Although there is only a single value we
+	replicate it on both servers to avoid sending it from one to the other
+	in the operations where it's needed by both (eg multiplication).
+	"""
 
-# 	dispatch_id = "public"
+	dispatch_id = "public"
 
-# 	def __init__(
-# 			self,
-# 			prot: Pond,
-# 			value_on_0: AbstractTensor,
-# 			value_on_1: AbstractTensor,
-# 			is_scaled: bool,
-# 	) -> None:
-# 		assert isinstance(value_on_0, AbstractTensor), type(value_on_0)
-# 		assert isinstance(value_on_1, AbstractTensor), type(value_on_1)
-# 		assert value_on_0.shape == value_on_1.shape
+	def __init__(
+			self,
+			prot: Pond,
+			value_on_0: AbstractTensor,
+			value_on_1: AbstractTensor,
+			is_scaled: bool,
+	) -> None:
+		assert isinstance(value_on_0, AbstractTensor), type(value_on_0)
+		assert isinstance(value_on_1, AbstractTensor), type(value_on_1)
+		assert value_on_0.shape == value_on_1.shape
 
-# 		super(PondPublicTensor, self).__init__(prot, is_scaled)
-# 		self.value_on_0 = value_on_0
-# 		self.value_on_1 = value_on_1
+		super(PondPublicTensor, self).__init__(prot, is_scaled)
+		self.value_on_0 = value_on_0
+		self.value_on_1 = value_on_1
 
-# 	def __repr__(self) -> str:
-# 		return "PondPublicTensor(shape={})".format(self.shape)
+	def __repr__(self) -> str:
+		return "PondPublicTensor(shape={})".format(self.shape)
 
-# 	@property
-# 	def shape(self) -> List[int]:
-# 		return self.value_on_0.shape
+	@property
+	def shape(self):#-> List[int]:
+		return self.value_on_0.shape
 
 # 	@property
 # 	def backing_dtype(self):
@@ -1986,25 +1984,25 @@ class Pond(Protocol):
 # #
 
 
-# class PondConstant(PondPublicTensor):
-# 	"""
-# 	This class essentially represents a public value, however it additionally
-# 	records the fact that the underlying value was declared as a constant.
-# 	"""
+class PondConstant(PondPublicTensor):
+	"""
+	This class essentially represents a public value, however it additionally
+	records the fact that the underlying value was declared as a constant.
+	"""
 
-# 	def __init__(self, prot, constant_on_0, constant_on_1, is_scaled):
-# 		assert isinstance(constant_on_0, AbstractConstant), type(constant_on_0)
-# 		assert isinstance(constant_on_1, AbstractConstant), type(constant_on_1)
-# 		assert constant_on_0.shape == constant_on_1.shape
+	def __init__(self, prot, constant_on_0, constant_on_1, is_scaled):
+		# assert isinstance(constant_on_0, AbstractConstant), type(constant_on_0)
+		# assert isinstance(constant_on_1, AbstractConstant), type(constant_on_1)
+		assert constant_on_0.shape == constant_on_1.shape
 
-# 		super(PondConstant, self).__init__(
-# 				prot, constant_on_0, constant_on_1, is_scaled
-# 		)
-# 		self.constant_on_0 = constant_on_0
-# 		self.constant_on_1 = constant_on_1
+		super(PondConstant, self).__init__(
+				prot, constant_on_0, constant_on_1, is_scaled
+		)
+		self.constant_on_0 = constant_on_0
+		self.constant_on_1 = constant_on_1
 
-# 	def __repr__(self) -> str:
-# 		return "PondConstant(shape={})".format(self.shape)
+	def __repr__(self) -> str:
+		return "PondConstant(shape={})".format(self.shape)
 
 
 # class PondPublicPlaceholder(PondPublicTensor):
