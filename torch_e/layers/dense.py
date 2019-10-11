@@ -34,9 +34,11 @@ class Dense(Layer):
 		return [self.input_shape[0] + self.out_features]
 
 	def initialize(self, initial_weights: InitialTensor = None, initial_bias: InitialTensor = None ) -> None:
+
 		if initial_weights is None:
 			initial_size = (self.in_features, self.out_features)
 			initial_weights = np.random.normal(scale=0.1, size=initial_size)
+
 		if initial_bias is not None:
 			self.bias = self.prot.private_tensor(initial_bias)
 
@@ -49,9 +51,9 @@ class Dense(Layer):
 		self.layer_input = x
 
 		if self.bias:
-			y = x.matmul(self.weights) + self.bias
+			y = x.mm(self.weights) + self.bias
 		else:
-			y = x.matmul(self.weights)
+			y = x.mm(self.weights)
 		return y
 
 	def backward(self, d_y, learning_rate):

@@ -38,12 +38,14 @@ import numpy as np
 # sample = int32factory.sample_uniform([2,2])
 # print(int32factory.modulus)
 # print(sample.value)
-# from torch_e.protocol.pond import pond
+from torch_e.protocol.pond import pond
+from torch_e.protocol.protocol import get_protocol, set_protocol
 from torch_e.protocol.pond.pond import Pond
 prot = Pond()
 prot.server_0.device_name = 'cpu'
 prot.server_1.device_name = 'cpu'
 prot.triple_source.device_name = 'cpu'
+set_protocol(prot)
 
 
 # TestPond
@@ -88,15 +90,15 @@ prot.triple_source.device_name = 'cpu'
 
 # test private matmul
 # private.mm(private)
-x = np.array([[1, 2],[3, 4]])
-y = np.array([[3, 2],[1, 4]])
-private_x = prot.private_tensor(x)
-private_y = prot.private_tensor(y)
+# x = np.array([[1, 2],[3, 4]])
+# y = np.array([[3, 2],[1, 4]])
+# private_x = prot.private_tensor(x)
+# private_y = prot.private_tensor(y)
 
-private_z = private_x.mm(private_y)
-public_z = private_z.reveal()
-print(public_z.value_on_0.value)
-print(public_z.value_on_1.value)
+# private_z = private_x.mm(private_y)
+# public_z = private_z.reveal()
+# print(public_z.value_on_0.value)
+# print(public_z.value_on_1.value)
 
 
 # test private add
@@ -131,4 +133,15 @@ print(public_z.value_on_1.value)
 # from torch_e.layers import core
 
 # test Dense
-# from torch_e.layers import dense
+
+from torch_e.layers.dense import Dense
+batch_size = 2
+in_channels = 3
+input_shape = [batch_size, in_channels]
+D = Dense(input_shape = input_shape, out_features = 4, transpose_input=False, transpose_weight=False)
+
+x = np.array([[1, 2, 3],[3,5,6]])
+private_x = prot.private_tensor(x)
+D.initialize()
+
+D.forward(private_x)

@@ -3315,7 +3315,7 @@ def _matmul_masked_masked(prot, x, y):
 	z1 = ab1 + a1.mm(beta) + alpha.mm(b1)
 
 
-	z = private_tensor(prot, z0, z1, x.is_scaled or y.is_scaled)
+	z = PondPrivateTensor(prot, z0, z1, x.is_scaled or y.is_scaled)
 	# z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
 	return z
 
