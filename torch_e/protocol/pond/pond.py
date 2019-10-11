@@ -30,15 +30,15 @@ from ...tensor import int64factory, fixed64
 # from ...player import Player
 from ...config import get_config, pytorch_supports_int64
 # from ...queue.fifo import AbstractFIFOQueue
-from ..protocol import Protocol, memoize #, memoize, nodes
+from ..protocol import Protocol, memoize , nodes
 from .triple_sources import OnlineTripleSource
 
 
-# TFEData = Union[np.ndarray, tf.Tensor]
-# TFEVariable = Union["PondPublicVariable", "PondPrivateVariable", tf.Variable]
-# TFEPublicTensor = NewType("TFEPublicTensor", "PondPublicTensor")
-# TFETensor = Union[TFEPublicTensor, "PondPrivateTensor", "PondMaskedTensor"]
-# TFEInputter = Callable[[], Union[List[tf.Tensor], tf.Tensor]]
+TFEData = Union[np.ndarray, torch.Tensor]
+TFEVariable = Union["PondPublicVariable", "PondPrivateVariable", torch.Tensor]
+TFEPublicTensor = NewType("TFEPublicTensor", "PondPublicTensor")
+TFETensor = Union[TFEPublicTensor, "PondPrivateTensor", "PondMaskedTensor"]
+TFEInputter = Callable[[], Union[List[torch.Tensor], torch.Tensor]]
 TF_INT_TYPES = [torch.int8, torch.int16, torch.int32, torch.int64]
 
 # _initializers = list()
@@ -151,7 +151,7 @@ class Pond(Protocol):
 		return PondConstant(self, x_on_0, x_on_1, apply_scaling)
 
 
-	def define_from_numpy(
+	def public_from_numpy(
 			self,
 			value: np.ndarray,
 			apply_scaling: bool = True,
@@ -172,7 +172,7 @@ class Pond(Protocol):
 		x_on_1.to(self.server_1.device_name)
 
 
-		return PondConstant(self, x_on_0, x_on_1, apply_scaling)
+		return PondPublicTensor(self, x_on_0, x_on_1, apply_scaling)
 
 	def numpy_to_public(
 			self,
@@ -418,6 +418,52 @@ class Pond(Protocol):
 		# _initializers.append(x.initializer)
 		return x
 
+	def private_tensor(
+			self,
+			initial_value,
+			apply_scaling: bool = True,
+			name: Optional[str] = None,
+			factory: Optional[AbstractFactory] = None,
+	):
+
+		init_val_types = (np.ndarray, torch.Tensor, PondPublicTensor, PondPrivateTensor)
+		assert isinstance(initial_value, init_val_types), type(initial_value)
+
+		factory = factory or self.tensor_factory
+
+
+		if isinstance(initial_value, np.ndarray):
+			v = factory.tensor(self._encode(initial_value, apply_scaling))
+			v0, v1 = self._share(v)
+
+		elif isinstance(initial_value, torch.Tensor):
+			v = factory.tensor(self._encode(initial_value, apply_scaling, tf_int_type=factory.native_type))
+			v0, v1 = self._share(v)
+
+		elif isinstance(initial_value, PondPublicTensor):
+			v_on_0, _ = initial_value.unwrapped
+			with tf.device(self.server_0.device_name):
+				# NOTE[Morten]
+				# we can alternatively avoid transfer of v1 from server0 and server1
+				# by having the crypto producer (pre-)generate sharings of zero
+				v0, v1 = self._share(v_on_0)
+
+		elif isinstance(initial_value, PondPrivateTensor):
+			v0, v1 = initial_value.unwrapped
+
+		else:
+			raise TypeError(("Don't know how to turn {} " "into private variable").format(type(initial_value)))
+
+		# x0 = factory.tensor(v0)
+		x0 = v0
+		x0.to(self.server_0.device_name)
+		# x1 = factory.tensor(v1)
+		x1 = v1
+		x1.to(self.server_1.device_name)
+
+		x = PondPrivateTensor(self, x0, x1, apply_scaling)
+		# _initializers.append(x.initializer)
+		return x
 # 	def fifo_queue(self, capacity, shape, shared_name):
 # 		return AdditiveFIFOQueue(
 # 				protocol=self,
@@ -869,18 +915,18 @@ class Pond(Protocol):
 # 												 control_dependencies_0=control_dependencies_0,
 # 												 control_dependencies_1=control_dependencies_1)
 
-# 	@memoize
-# 	def add(self, x, y):
-# 		"""
-# 		add(x, y) -> PondTensor
+	@memoize
+	def add(self, x, y):
+		"""
+		add(x, y) -> PondTensor
 
-# 		Adds two tensors `x` and `y`.
+		Adds two tensors `x` and `y`.
 
-# 		:param PondTensor x: The first operand.
-# 		:param PondTensor y: The second operand.
-# 		"""
-# 		x, y = self.lift(x, y)
-# 		return self.dispatch("add", x, y)
+		:param PondTensor x: The first operand.
+		:param PondTensor y: The second operand.
+		"""
+		x, y = self.lift(x, y)
+		return self.dispatch("add", x, y)
 
 	# pylint: disable=inconsistent-return-statements
 	def lift(self, x, y=None, apply_scaling: Optional[bool] = None):
@@ -966,26 +1012,27 @@ class Pond(Protocol):
 # 		x, y = self.lift(x, y)
 # 		return self.dispatch("sub", x, y)
 
-# 	def mask(self, x):
-# 		"""Convert to a PondMaskedTensor."""
-# 		if isinstance(x, (list, tuple)):
-# 			# apply recursively
-# 			return [self.mask(xi) for xi in x]
+	def mask(self, x):
+		"""Convert to a PondMaskedTensor."""
+		if isinstance(x, (list, tuple)):
+			# apply recursively
+			return [self.mask(xi) for xi in x]
 
-# 		node_key = ("mask", x)
-# 		x_masked = nodes.get(node_key, None)
+		node_key = ("mask", x)
+		x_masked = nodes.get(node_key, None)
 
-# 		if x_masked is not None:
-# 			return x_masked
+		if x_masked is not None:
+			return x_masked
 
-# 		if isinstance(x, PondPrivateTensor):
-# 			x_masked = _mask_private(self, x)
+		if isinstance(x, PondPrivateTensor):
+			x_masked = _mask_private(self, x)
 
-# 		else:
-# 			raise TypeError("Don't know how to mask {}".format(type(x)))
+		else:
+			raise TypeError("Don't know how to mask {}".format(type(x)))
 
-# 		nodes[node_key] = x_masked
-# 		return x_masked
+		nodes[node_key] = x_masked
+
+		return x_masked
 
 # 	@memoize
 # 	def mul(self, x, y):
@@ -996,9 +1043,9 @@ class Pond(Protocol):
 # 	def square(self, x):
 # 		return self.dispatch("square", x)
 
-# 	@memoize
-# 	def matmul(self, x: "PondTensor", y: "PondTensor") -> "PondTensor":
-# 		return self.dispatch("matmul", x, y)
+	@memoize
+	def matmul(self, x: "PondTensor", y: "PondTensor") -> "PondTensor":
+		return self.dispatch("matmul", x, y)
 
 # 	def dot(self, x, y):
 # 		return self.matmul(x, y)
@@ -1006,27 +1053,27 @@ class Pond(Protocol):
 # 	def reciprocal(self, x):
 # 		return self.dispatch("reciprocal", x)
 
-# 	@memoize
-# 	def div(self, x, y):
-# 		"""
-# 		Performs a true division of `x` by `y` where `y` is public.
+	# @memoize
+	# def div(self, x, y):
+	# 	"""
+	# 	Performs a true division of `x` by `y` where `y` is public.
 
-# 		No flooring is performing if `y` is an integer type as it is implicitly
-# 		treated as a float.
-# 		"""
+	# 	No flooring is performing if `y` is an integer type as it is implicitly
+	# 	treated as a float.
+	# 	"""
 
-# 		assert isinstance(x, PondTensor)
+	# 	assert isinstance(x, PondTensor)
 
-# 		if isinstance(y, float):
-# 			y_inverse = 1. / y
-# 		if isinstance(y, int):
-# 			y_inverse = 1. / float(y)
-# 		elif isinstance(y, PondPublicTensor):
-# 			y_inverse = self.reciprocal(y)
-# 		else:
-# 			raise TypeError("Don't know how to divide by type {}".format(type(y)))
+	# 	if isinstance(y, float):
+	# 		y_inverse = 1. / y
+	# 	if isinstance(y, int):
+	# 		y_inverse = 1. / float(y)
+	# 	elif isinstance(y, PondPublicTensor):
+	# 		y_inverse = self.reciprocal(y)
+	# 	else:
+	# 		raise TypeError("Don't know how to divide by type {}".format(type(y)))
 
-# 		return self.mul(x, y_inverse)
+	# 	return self.mul(x, y_inverse)
 
 # 	@memoize
 # 	def truncate(self, x: "PondTensor"):
@@ -1663,32 +1710,32 @@ class PondTensor(abc.ABC):
 		:returns: The shape of this tensor.
 		"""
 
-# 	@property
-# 	@abc.abstractmethod
-# 	def unwrapped(self) -> Tuple[AbstractTensor, ...]:
-# 		pass
+	@property
+	@abc.abstractmethod
+	def unwrapped(self) -> Tuple[AbstractTensor, ...]:
+		pass
 
-# 	def add(self, other):
-# 		"""
-# 		Add `other` to this PondTensor.	This can be another tensor with the same
-# 		backing or a primitive.
+	def add(self, other):
+		"""
+		Add `other` to this PondTensor.	This can be another tensor with the same
+		backing or a primitive.
 
-# 		This function returns a new PondTensor and does not modify this one.
+		This function returns a new PondTensor and does not modify this one.
 
-# 		:param PondTensor other: a or primitive (e.g. a float)
-# 		:return: A new PondTensor with `other` added.
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.add(self, other)
+		:param PondTensor other: a or primitive (e.g. a float)
+		:return: A new PondTensor with `other` added.
+		:rtype: PondTensor
+		"""
+		return self.prot.add(self, other)
 
-# 	def __add__(self, other):
-# 		"""
-# 		See :meth:`~tf_encrypted.protocol.pond.PondTensor.add`
-# 		"""
-# 		return self.prot.add(self, other)
+	def __add__(self, other):
+		"""
+		See :meth:`~tf_encrypted.protocol.pond.PondTensor.add`
+		"""
+		return self.prot.add(self, other)
 
-# 	def __radd__(self, other):
-# 		return other.prot.add(other, self)
+	def __radd__(self, other):
+		return other.prot.add(other, self)
 
 # 	def reduce_sum(self, axis=None, keepdims=None):
 # 		"""
@@ -1754,17 +1801,29 @@ class PondTensor(abc.ABC):
 # 		"""
 # 		return self.prot.square(self)
 
-# 	def matmul(self, other):
-# 		"""
-# 		MatMul this tensor with `other`.	This will perform matrix multiplication,
-# 		rather than elementwise like
-# 		:meth:`~tf_encrypted.protocol.pond.PondTensor.mul`
+	def matmul(self, other):
+		"""
+		MatMul this tensor with `other`.	This will perform matrix multiplication,
+		rather than elementwise like
+		:meth:`~tf_encrypted.protocol.pond.PondTensor.mul`
 
-# 		:param PondTensor other: to subtract
-# 		:return: A new PondTensor
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.matmul(self, other)
+		:param PondTensor other: to subtract
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.matmul(self, other)
+
+	def mm(self, other):
+		"""
+		MatMul this tensor with `other`.	This will perform matrix multiplication,
+		rather than elementwise like
+		:meth:`~tf_encrypted.protocol.pond.PondTensor.mul`
+
+		:param PondTensor other: to subtract
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.matmul(self, other)
 
 # 	def dot(self, other):
 # 		"""
@@ -1974,62 +2033,62 @@ class PondPrivateTensor(PondTensor):
 		return self.prot.reveal(self)
 
 
-# class PondMaskedTensor(PondTensor):
-# 	"""
-# 	This class is part of an optimization where values are only ever masked
-# 	once as opposed to for every operation in which they are used. As such
-# 	it represents a private value with additional data associated, namely
-# 	the masks used for the shares on the two servers as well as on the
-# 	crypto provider. For convenience it keeps a reference to the unmasked
-# 	value as well (in the form of a private tensor).
-# 	"""
+class PondMaskedTensor(PondTensor):
+	"""
+	This class is part of an optimization where values are only ever masked
+	once as opposed to for every operation in which they are used. As such
+	it represents a private value with additional data associated, namely
+	the masks used for the shares on the two servers as well as on the
+	crypto provider. For convenience it keeps a reference to the unmasked
+	value as well (in the form of a private tensor).
+	"""
 
-# 	dispatch_id = "masked"
+	dispatch_id = "masked"
 
-# 	def __init__(
-# 			self,
-# 			prot: Pond,
-# 			unmasked: PondPrivateTensor,
-# 			a: AbstractTensor,
-# 			a0: AbstractTensor,
-# 			a1: AbstractTensor,
-# 			alpha_on_0: AbstractTensor,
-# 			alpha_on_1: AbstractTensor,
-# 			is_scaled: bool,
-# 	) -> None:
-# 		assert isinstance(unmasked, PondPrivateTensor)
+	def __init__(
+			self,
+			prot: Pond,
+			unmasked: PondPrivateTensor,
+			a: AbstractTensor,
+			a0: AbstractTensor,
+			a1: AbstractTensor,
+			alpha_on_0: AbstractTensor,
+			alpha_on_1: AbstractTensor,
+			is_scaled: bool,
+	) -> None:
+		assert isinstance(unmasked, PondPrivateTensor)
 
-# 		super(PondMaskedTensor, self).__init__(prot, is_scaled)
-# 		self.unmasked = unmasked
-# 		self.a = a
-# 		self.a0 = a0
-# 		self.a1 = a1
-# 		self.alpha_on_0 = alpha_on_0
-# 		self.alpha_on_1 = alpha_on_1
+		super(PondMaskedTensor, self).__init__(prot, is_scaled)
+		self.unmasked = unmasked
+		self.a = a
+		self.a0 = a0
+		self.a1 = a1
+		self.alpha_on_0 = alpha_on_0
+		self.alpha_on_1 = alpha_on_1
 
-# 	def __repr__(self) -> str:
-# 		return "PondMaskedTensor(shape={})".format(self.shape)
+	def __repr__(self) -> str:
+		return "PondMaskedTensor(shape={})".format(self.shape)
 
-# 	@property
-# 	def shape(self) -> List[int]:
-# 		return self.a.shape
+	@property
+	def shape(self) -> List[int]:
+		return self.a.shape
 
-# 	@property
-# 	def backing_dtype(self):
-# 		return self.a.factory
+	@property
+	def backing_dtype(self):
+		return self.a.factory
 
-# 	@property
-# 	def unwrapped(self) -> Tuple[AbstractTensor, ...]:
-# 		return (self.a, self.a0, self.a1, self.alpha_on_0, self.alpha_on_1)
+	@property
+	def unwrapped(self) -> Tuple[AbstractTensor, ...]:
+		return (self.a, self.a0, self.a1, self.alpha_on_0, self.alpha_on_1)
 
-# 	def reveal(self) -> PondPublicTensor:
-# 		return self.prot.reveal(self.unmasked)
+	def reveal(self) -> PondPublicTensor:
+		return self.prot.reveal(self.unmasked)
 
 
-# #
-# # Extentions of the base Pond classes that record extra information
-# # relevant to how TensorFlow works.
-# #
+#
+# Extentions of the base Pond classes that record extra information
+# relevant to how TensorFlow works.
+#
 
 
 class PondConstant(PondPublicTensor):
@@ -2249,19 +2308,19 @@ class PondPrivateVariable(PondPrivateTensor):
 # #
 
 
-# def _type(x):
-# 	"""Helper to check and return PondTensor types."""
+def _type(x):
+	"""Helper to check and return PondTensor types."""
 
-# 	if isinstance(x, PondPublicTensor):
-# 		return PondPublicTensor
+	if isinstance(x, PondPublicTensor):
+		return PondPublicTensor
 
-# 	if isinstance(x, PondPrivateTensor):
-# 		return PondPrivateTensor
+	if isinstance(x, PondPrivateTensor):
+		return PondPrivateTensor
 
-# 	if isinstance(x, PondMaskedTensor):
-# 		return PondMaskedTensor
+	if isinstance(x, PondMaskedTensor):
+		return PondMaskedTensor
 
-# 	return type(x)
+	return type(x)
 
 
 # # TODO[Morten] this is just a very first step; far from finished
@@ -2652,27 +2711,24 @@ def _reveal_private(prot, x):
 # 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
-# def _add_private_private(prot, x, y):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	assert isinstance(y, PondPrivateTensor), type(y)
-# 	# TODO[Morten] fails due to use in masking in SecureNN; how do deal with
-# 	#							this?
-# 	# err = "Cannot mix different encodings: {} {}".format(x.is_scaled,
-# 	#																											y.is_scaled)
-# 	# assert x.is_scaled == y.is_scaled, err
+def _add_private_private(prot, x, y):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	assert isinstance(y, PondPrivateTensor), type(y)
+	# TODO[Morten] fails due to use in masking in SecureNN; how do deal with
+	#							this?
+	# err = "Cannot mix different encodings: {} {}".format(x.is_scaled,
+	#																											y.is_scaled)
+	# assert x.is_scaled == y.is_scaled, err
 
-# 	x0, x1 = x.unwrapped
-# 	y0, y1 = y.unwrapped
+	x0, x1 = x.unwrapped
+	y0, y1 = y.unwrapped
 
-# 	with tf.name_scope("add"):
+	z0 = x0 + y0
+	z0.to(prot.server_0.device_name)
+	z1 = x1 + y1
+	z1.to(prot.server_1.device_name)
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z0 = x0 + y0
-
-# 		with tf.device(prot.server_1.device_name):
-# 			z1 = x1 + y1
-
-# 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
+	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
 # def _add_private_masked(prot, x, y):
@@ -3214,10 +3270,10 @@ def _reveal_private(prot, x):
 # 		return z
 
 
-# def _matmul_private_private(prot, x, y):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	assert isinstance(y, PondPrivateTensor), type(y)
-# 	return prot.matmul(prot.mask(x), prot.mask(y))
+def _matmul_private_private(prot, x, y):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	assert isinstance(y, PondPrivateTensor), type(y)
+	return prot.matmul(prot.mask(x), prot.mask(y))
 
 
 # def _matmul_private_masked(prot, x, y):
@@ -3238,32 +3294,30 @@ def _reveal_private(prot, x):
 # 	return prot.matmul(x, prot.mask(y))
 
 
-# def _matmul_masked_masked(prot, x, y):
-# 	assert isinstance(x, PondMaskedTensor), type(x)
-# 	assert isinstance(y, PondMaskedTensor), type(y)
+def _matmul_masked_masked(prot, x, y):
+	assert isinstance(x, PondMaskedTensor), type(x)
+	assert isinstance(y, PondMaskedTensor), type(y)
 
-# 	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
-# 	b, b0, b1, beta_on_0, beta_on_1 = y.unwrapped
+	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
+	b, b0, b1, beta_on_0, beta_on_1 = y.unwrapped
 
-# 	with tf.name_scope("matmul"):
+	ab0, ab1 = prot.triple_source.matmul_triple(a, b)
 
-# 		ab0, ab1 = prot.triple_source.matmul_triple(a, b)
+	# .to(prot.server_0.device_name)
+	alpha = alpha_on_0
+	beta = beta_on_0
+	z0 = ab0 + a0.mm(beta) + alpha.mm(b0) + alpha.mm(beta)
 
-# 		with tf.device(prot.server_0.device_name):
-# 			with tf.name_scope("combine"):
-# 				alpha = alpha_on_0
-# 				beta = beta_on_0
-# 				z0 = ab0 + a0.matmul(beta) + alpha.matmul(b0) + alpha.matmul(beta)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			with tf.name_scope("combine"):
-# 				alpha = alpha_on_1
-# 				beta = beta_on_1
-# 				z1 = ab1 + a1.matmul(beta) + alpha.matmul(b1)
+	# .to(prot.server_1.device_name)
+	alpha = alpha_on_1
+	beta = beta_on_1
+	z1 = ab1 + a1.mm(beta) + alpha.mm(b1)
 
-# 		z = PondPrivateTensor(prot, z0, z1, x.is_scaled or y.is_scaled)
-# 		z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
-# 		return z
+
+	z = private_tensor(prot, z0, z1, x.is_scaled or y.is_scaled)
+	# z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
+	return z
 
 
 # #
@@ -4069,32 +4123,26 @@ def _reveal_private(prot, x):
 # #
 
 
-# def _mask_private(prot: Pond, x: PondPrivateTensor) -> PondMaskedTensor:
-# 	assert isinstance(x, PondPrivateTensor)
+def _mask_private(prot: Pond, x: PondPrivateTensor) -> PondMaskedTensor:
+	assert isinstance(x, PondPrivateTensor)
 
-# 	x0, x1 = x.unwrapped
+	x0, x1 = x.unwrapped
+	a, a0, a1 = prot.triple_source.mask(x.backing_dtype, x.shape)
 
-# 	with tf.name_scope("mask"):
+	alpha0 = x0 - a0
+	alpha0.to(prot.server_0.device_name)
 
-# 		a, a0, a1 = prot.triple_source.mask(x.backing_dtype, x.shape)
+	alpha1 = x1 - a1
+	alpha1.to(prot.server_1.device_name)
 
-# 		with tf.name_scope("online"):
+	alpha_on_0 = alpha0 + alpha1
+	alpha_on_0.to(prot.server_0.device_name)
 
-# 			with tf.device(prot.server_0.device_name):
-# 				alpha0 = x0 - a0
+	alpha_on_1 = alpha0 + alpha1
+	alpha_on_1.to(prot.server_1.device_name)
 
-# 			with tf.device(prot.server_1.device_name):
-# 				alpha1 = x1 - a1
 
-# 			with tf.device(prot.server_0.device_name):
-# 				alpha_on_0 = alpha0 + alpha1
-
-# 			with tf.device(prot.server_1.device_name):
-# 				alpha_on_1 = alpha0 + alpha1
-
-# 	return PondMaskedTensor(
-# 			prot, x, a, a0, a1, alpha_on_0, alpha_on_1, x.is_scaled,
-# 	)
+	return PondMaskedTensor( prot, x, a, a0, a1, alpha_on_0, alpha_on_1, x.is_scaled,)
 
 
 # #

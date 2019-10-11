@@ -42,16 +42,16 @@ class BaseTripleSource(TripleSource):
 		self.producer = config.get_player(producer) if producer else None
 
 ### ------------------testing here ------------------###
-	# def mask(self, backing_dtype, shape):
+	def mask(self, backing_dtype, shape):
 
-	# 	with tf.name_scope("triple-generation"):
-	# 		with tf.device(self.producer.device_name):
-	# 			a0 = backing_dtype.sample_uniform(shape)
-	# 			a1 = backing_dtype.sample_uniform(shape)
-	# 			a = a0 + a1
+		a0 = backing_dtype.sample_uniform(shape)
+		a1 = backing_dtype.sample_uniform(shape)
+		a = a0 + a1
+		a.to(self.producer.device_name)
 
-	# 	d0, d1 = self._build_queues(a0, a1)
-	# 	return a, d0, d1
+		print('klkkk')
+		d0, d1 = self._build_queues(a0, a1)
+		return a, d0, d1
 
 	# def mul_triple(self, a, b):
 
@@ -71,14 +71,13 @@ class BaseTripleSource(TripleSource):
 
 	# 	return self._build_queues(aa0, aa1)
 
-	# def matmul_triple(self, a, b):
+	def matmul_triple(self, a, b):
+		a.to(self.producer.device_name)
+		b.to(self.producer.device_name)
+		ab = a.mm(b)
+		ab0, ab1 = self._share(ab)
 
-	# 	with tf.name_scope("triple-generation"):
-	# 		with tf.device(self.producer.device_name):
-	# 			ab = a.matmul(b)
-	# 			ab0, ab1 = self._share(ab)
-
-	# 	return self._build_queues(ab0, ab1)
+		return self._build_queues(ab0, ab1)
 
 	# def conv2d_triple(self, a, b, strides, padding):
 
@@ -165,23 +164,27 @@ class BaseTripleSource(TripleSource):
 
 	# 	return a_squeezed
 
-	# def _share(self, secret):
-	# 	with tf.name_scope("share"):
-	# 		share0 = secret.factory.sample_uniform(secret.shape)
-	# 		share1 = secret - share0
-	# 		# randomized swap to distribute who gets the seed
-	# 		if random.random() < 0.5:
-	# 			share0, share1 = share1, share0
-	# 	return share0, share1
+	def _share(self, secret):
+		
+		share0 = secret.factory.sample_uniform(secret.shape)
+		share1 = secret - share0
 
-	# @abc.abstractmethod
-	# def _build_queues(self, c0, c1):
-	# 	"""
-	# 	Method used to inject buffers between mask generating and use
-	# 	(ie online vs offline). `c0` and `c1` represent the generated
-	# 	masks and the method is expected to return a similar pair of
-	# 	of tensors.
-	# 	"""
+		# randomized swap to distribute load between two servers wrt who gets
+		# the seed
+		if random.random() < 0.5:
+				share0, share1 = share1, share0
+
+		return share0, share1
+
+
+	@abc.abstractmethod
+	def _build_queues(self, c0, c1):
+		"""
+		Method used to inject buffers between mask generating and use
+		(ie online vs offline). `c0` and `c1` represent the generated
+		masks and the method is expected to return a similar pair of
+		of tensors.
+		"""
 
 
 class OnlineTripleSource(BaseTripleSource):

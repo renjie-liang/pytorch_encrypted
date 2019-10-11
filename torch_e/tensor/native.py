@@ -190,7 +190,7 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 
 		def clone(self):
 			value = self.value.clone()
-			return OddDenseTensor(value)
+			return DenseTensor(value)
 
 		def to_native(self) -> torch.Tensor:
 			return self.value
@@ -272,7 +272,7 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			return DenseTensor(value)
 
 		def mm(self, other):
-			return self.matmul(self, other)
+			return self.matmul(other)
 
 		# def im2col(self, h_filter, w_filter, padding, stride):
 		# 	i2c = im2col(self.value, h_filter, w_filter, padding, stride)

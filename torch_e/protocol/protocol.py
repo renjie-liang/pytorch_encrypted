@@ -43,30 +43,30 @@ class Protocol(ABC):
 		pass
 
 
-# def set_protocol(prot: Protocol) -> None:
-# 	"""
-# 	set_protocol(prot)
+def set_protocol(prot: Protocol) -> None:
+	"""
+	set_protocol(prot)
 
-# 	Sets the global protocol.
-# 	E.g. :class:`~tf_encrypted.protocol.securenn.SecureNN` or
-# 	:class:`~tf_encrypted.protocol.pond.Pond`.
+	Sets the global protocol.
+	E.g. :class:`~tf_encrypted.protocol.securenn.SecureNN` or
+	:class:`~tf_encrypted.protocol.pond.Pond`.
 
-# 	.. code-block::python
-# 			tfe.set_protocol(tfe.protocol.secureNN())
+	.. code-block::python
+			tfe.set_protocol(tfe.protocol.secureNN())
 
-# 	:param Protocol prot: An instance of a tfe protocol.
-# 	"""
-# 	global __PROTOCOL__	# pylint: disable=invalid-name
-# 	__PROTOCOL__ = prot
+	:param Protocol prot: An instance of a tfe protocol.
+	"""
+	global __PROTOCOL__	# pylint: disable=invalid-name
+	__PROTOCOL__ = prot
 
 
-# def get_protocol() -> Optional[Protocol]:
-# 	"""
-# 	get_protocol() -> Protocol or None
+def get_protocol() -> Optional[Protocol]:
+	"""
+	get_protocol() -> Protocol or None
 
-# 	Returns the current global protocol.
-# 	"""
-# 	return __PROTOCOL__
+	Returns the current global protocol.
+	"""
+	return __PROTOCOL__
 
 
 def memoize(func: Callable) -> Callable:

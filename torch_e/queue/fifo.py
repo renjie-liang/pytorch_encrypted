@@ -29,7 +29,7 @@ class AbstractFIFOQueue(abc.ABC):
     Blocks if queue is empty.
     """
 
-
+### can't run
 def FIFOQueue(capacity, shape, shared_name=None):
   return get_protocol().fifo_queue(
       capacity=capacity,

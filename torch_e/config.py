@@ -132,7 +132,7 @@ class LocalConfig(Config):
 		player = Player(
 				name=name,
 				index=index,
-				device_name=dv_str.format(job_name=self._job_name, cpu_id=index),
+				device_name= 'cpu',#dv_str.format(job_name=self._job_name, cpu_id=index),
 		)
 		self._players.append(player)
 		return player

@@ -2,9 +2,9 @@ import torch
 import numpy as np
 ## test config
 
-import torch
-x = torch.tensor([1], dtype = torch.int64)
-x = x.reshape(1,1)
+# import torch
+# x = torch.tensor([1], dtype = torch.int64)
+# x = x.reshape(1,1)
 
 
 # from torch_e.config import get_config
@@ -38,7 +38,7 @@ x = x.reshape(1,1)
 # sample = int32factory.sample_uniform([2,2])
 # print(int32factory.modulus)
 # print(sample.value)
-from torch_e.protocol.pond import pond
+# from torch_e.protocol.pond import pond
 from torch_e.protocol.pond.pond import Pond
 prot = Pond()
 prot.server_0.device_name = 'cpu'
@@ -49,13 +49,13 @@ prot.triple_source.device_name = 'cpu'
 # TestPond
 
 # print(prot)
-expected = np.array([1,565564])
-public_x = prot.define_from_numpy(expected)
+# expected = np.array([1,565564])
+# public_x = prot.define_from_numpy(expected)
 # print(x.constant_on_0.value)
 # print(x.constant_on_0.shape)
 
 
-private_x = prot.define_private_variable(expected)
+# private_x = prot.define_private_variable(expected)
 
 # print(private_x.share0.value)
 # print(private_x.share1.value)
@@ -66,13 +66,69 @@ private_x = prot.define_private_variable(expected)
 
 # TestPondPublicEqual
 
-x = np.array([100, 200, 100, 300])
-y = np.array([100, 100, 100, 200])
+# x = np.array([100, 200, 100, 300])
+# y = np.array([100, 100, 100, 200])
 
-public_x = prot.numpy_to_public(x)
-public_y = prot.numpy_to_public(y)
+# public_x = prot.numpy_to_public(x)
+# public_y = prot.numpy_to_public(y)
+
+# public_equal = prot.equal(public_x, public_y)
+# print(public_equal.value_on_0.value)
+
+# test three type public mul
+# type 1 public * int
+# x = np.array([100, 200, 100, 300])
+# y = 2
+
+# public_x = prot.numpy_to_public(x)
+# z = public_x * y
+# print(z)
+# type 2 public * float
+# type 3 public * public
+
+# test private matmul
+# private.mm(private)
+x = np.array([[1, 2],[3, 4]])
+y = np.array([[3, 2],[1, 4]])
+private_x = prot.private_tensor(x)
+private_y = prot.private_tensor(y)
+
+private_z = private_x.mm(private_y)
+public_z = private_z.reveal()
+print(public_z.value_on_0.value)
+print(public_z.value_on_1.value)
 
 
-public_equal = prot.equal(public_x, public_y)
-print(public_equal.value_on_0.value)
+# test private add
+#private + private
+# x = np.array([[1, 2],[3, 4]])
+# y = np.array([[3, 2],[1, 4]])
+# private_x = prot.private_tensor(x)
+# private_y = prot.private_tensor(y)
 
+# private_z = private_x + private_y
+# public_z = private_z.reveal()
+# print(public_z.value_on_0.value)
+# print(public_z.value_on_1.value)
+
+
+
+# # test_public_division
+# x = np.array([100, 200, 300, 400])
+# y = np.array([10, 20, 30, 20])
+
+# private_x = prot.private_tensor(x)
+# public_y = prot.public_from_numpy(y)
+# z = private_x / public_y
+
+
+### test fifo
+# from torch_e.queue import fifo
+# fifo.FIFOQueue()
+
+### test layer
+### test core
+# from torch_e.layers import core
+
+# test Dense
+# from torch_e.layers import dense
