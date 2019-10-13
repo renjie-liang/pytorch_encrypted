@@ -41,7 +41,6 @@ class BaseTripleSource(TripleSource):
 		self.player1 = config.get_player(player1) if player1 else None
 		self.producer = config.get_player(producer) if producer else None
 
-### ------------------testing here ------------------###
 	def mask(self, backing_dtype, shape):
 
 		a0 = backing_dtype.sample_uniform(shape)
@@ -49,9 +48,9 @@ class BaseTripleSource(TripleSource):
 		a = a0 + a1
 		a.to(self.producer.device_name)
 
-		print('klkkk')
 		d0, d1 = self._build_queues(a0, a1)
 		return a, d0, d1
+### ------------------testing here ------------------###
 
 	# def mul_triple(self, a, b):
 
