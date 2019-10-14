@@ -3301,11 +3301,13 @@ def _matmul_masked_masked(prot, x, y):
 	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
 	b, b0, b1, beta_on_0, beta_on_1 = y.unwrapped
 
+
 	ab0, ab1 = prot.triple_source.matmul_triple(a, b)
 
 	# .to(prot.server_0.device_name)
 	alpha = alpha_on_0
 	beta = beta_on_0
+
 	z0 = ab0 + a0.mm(beta) + alpha.mm(b0) + alpha.mm(beta)
 
 
