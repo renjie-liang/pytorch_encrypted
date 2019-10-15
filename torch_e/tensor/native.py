@@ -306,20 +306,24 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		# 	values = tf.split(self.value, num_split, axis=axis)
 		# 	return [DenseTensor(value) for value in values]
 
-		# def reshape(self, axes: Union[tf.Tensor, List[int]]):
-		# 	return DenseTensor(tf.reshape(self.value, axes))
+		def reshape(self, axes: Union[tf.Tensor, List[int]]):
+			res = self.value.reshape(axes)
+			return DenseTensor(res)
 
 		# def negative(self):
 		# 	value = tf.negative(self.value)
 		# 	if EXPLICIT_MODULUS is not None:
 		# 		value %= EXPLICIT_MODULUS
 		# 	return DenseTensor(value)
+		def sum(self,axis = None):
+			value = torch.sum(self.value,dim = axis)
+			return DenseTensor(value)
 
-		# def reduce_sum(self, axis, keepdims=None):
-		# 	value = tf.reduce_sum(self.value, axis, keepdims)
-		# 	if EXPLICIT_MODULUS is not None:
-		# 		value %= EXPLICIT_MODULUS
-		# 	return DenseTensor(value)
+		def reduce_sum(self, axis):
+			value = torch.sum(self.value,dim = axis)
+			if EXPLICIT_MODULUS is not None:
+				value %= EXPLICIT_MODULUS
+			return DenseTensor(value)
 
 		# def cumsum(self, axis, exclusive, reverse):
 		# 	value = tf.cumsum(self.value,

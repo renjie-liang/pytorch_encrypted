@@ -1451,31 +1451,31 @@ class Pond(Protocol):
 
 # 		return z
 
-# 	def maxpool2d(self, x, pool_size, strides, padding):
-# 		raise NotImplementedError("Only SecureNN supports Max Pooling")
+	def maxpool2d(self, x, pool_size, strides, padding):
+		raise NotImplementedError("Only SecureNN supports Max Pooling")
 
-# 	def avgpool2d(self, x, pool_size, strides, padding):
-# 		"""See tf.nn.avgpool2d."""
-# 		node_key = ("avgpool2d", x, tuple(pool_size), tuple(strides), padding)
-# 		z = nodes.get(node_key, None)
+	def avgpool2d(self, x, pool_size, strides, padding):
+		"""See tf.nn.avgpool2d."""
+		node_key = ("avgpool2d", x, tuple(pool_size), tuple(strides), padding)
+		z = nodes.get(node_key, None)
 
-# 		if z is not None:
-# 			return z
+		if z is not None:
+			return z
 
-# 		dispatch = {
-# 				PondPublicTensor: _avgpool2d_public,
-# 				PondPrivateTensor: _avgpool2d_private,
-# 				PondMaskedTensor: _avgpool2d_masked,
-# 		}
+		dispatch = {
+				PondPublicTensor: _avgpool2d_public,
+				PondPrivateTensor: _avgpool2d_private,
+				PondMaskedTensor: _avgpool2d_masked,
+		}
 
-# 		func = dispatch.get(_type(x), None)
-# 		if func is None:
-# 			raise TypeError("Don't know how to avgpool2d {}".format(type(x)))
+		func = dispatch.get(_type(x), None)
+		if func is None:
+			raise TypeError("Don't know how to avgpool2d {}".format(type(x)))
 
-# 		z = func(self, x, pool_size, strides, padding)
-# 		nodes[node_key] = z
+		z = func(self, x, pool_size, strides, padding)
+		nodes[node_key] = z
 
-# 		return z
+		return z
 
 # 	def batch_to_space_nd(self, x, block_shape, crops):
 # 		return self.dispatch("batch_to_space_nd", x, block_shape, crops)
@@ -3048,6 +3048,7 @@ def _mul_private_public(prot, x, y):
 	x0, x1 = x.unwrapped
 	y_on_0, y_on_1 = y.unwrapped
 
+
 	# in prot.server_0.device_name
 	z0 = x0 * y_on_0
 
@@ -3428,31 +3429,34 @@ def _matmul_masked_masked(prot, x, y):
 # #
 
 
-# def _avgpool2d_core(
-# 		prot: Pond,
-# 		x: PondTensor,
-# 		pool_size: Tuple[int, int],
-# 		strides: Tuple[int, int],
-# 		padding: str,
-# ) -> Tuple[AbstractTensor, AbstractTensor, float]:
-# 	x_on_0, x_on_1 = x.unwrapped
-# 	_, _, h, w = x.shape
-# 	scalar = 1 / (pool_size[0] * pool_size[1])
-# 	siamese = pool_size == strides and pool_size[0] == pool_size[1]
-# 	even = h.value % pool_size[0] == 0 and w.value % pool_size[1] == 0
+def _avgpool2d_core(
+			prot: Pond,
+			x: PondTensor,
+			pool_size: Tuple[int, int],
+			strides: Tuple[int, int],
+			padding: str,) -> Tuple[AbstractTensor, AbstractTensor, float]:
+	x_on_0, x_on_1 = x.unwrapped
+	_, _, h, w = x.shape
 
-# 	if siamese and even:
-# 		pooler = _avgpool2d_reshape_reduce
-# 	else:
-# 		pooler = _avgpool2d_im2col_reduce
 
-# 	with tf.device(prot.server_0.device_name):
-# 		y_on_0 = pooler(x_on_0, pool_size, strides, padding)
+	scalar = 1 / (pool_size[0] * pool_size[1])
+	siamese = pool_size == strides and pool_size[0] == pool_size[1]
+	even = h % pool_size[0] == 0 and w % pool_size[1] == 0
 
-# 	with tf.device(prot.server_1.device_name):
-# 		y_on_1 = pooler(x_on_1, pool_size, strides, padding)
+	if siamese and even:
+		pooler = _avgpool2d_reshape_reduce
+	else:
+		pooler = _avgpool2d_im2col_reduce
 
-# 	return y_on_0, y_on_1, scalar
+	# in prot.server_0.device_name
+	y_on_0 = pooler(x_on_0, pool_size, strides, padding)
+
+	# in prot.server_1.device_name
+	y_on_1 = pooler(x_on_1, pool_size, strides, padding)
+
+
+
+	return y_on_0, y_on_1, scalar
 
 
 # def _avgpool2d_im2col_reduce(
@@ -3481,60 +3485,62 @@ def _matmul_masked_masked(prot, x, y):
 # 	return out
 
 
-# def _avgpool2d_reshape_reduce(x, pool_size: Tuple[int, int], *args):	# pylint: disable=unused-argument
-# 	"""Perform 2D average pooling by the reshape method."""
-# 	pool_height = tf.Dimension(pool_size[0])
-# 	pool_width = tf.Dimension(pool_size[1])
-# 	n, c, h, w = x.shape
-# 	x_reshaped = x.reshape(
-# 			[n, c, h // pool_height, pool_height, w // pool_width, pool_width],
-# 	)
-# 	return x_reshaped.reduce_sum(axis=3).reduce_sum(axis=4)
+def _avgpool2d_reshape_reduce(x, pool_size: Tuple[int, int], *args):	# pylint: disable=unused-argument
+	"""Perform 2D average pooling by the reshape method."""
+	pool_height = pool_size[0]
+	pool_width = pool_size[1]
+	n, c, h, w = x.shape
+	x_reshaped = x.reshape([n, c, h // pool_height, 
+			pool_height, w // pool_width, pool_width])
+	return x_reshaped.reduce_sum(axis=3).reduce_sum(axis=4)
 
 
-# def _avgpool2d_public(
-# 		prot: Pond,
-# 		x: PondPublicTensor,
-# 		pool_size: Tuple[int, int],
-# 		strides: Tuple[int, int],
-# 		padding: str,
-# ) -> PondPublicTensor:
-
-# 	with tf.name_scope("avgpool2d"):
-# 		y_on_0, y_on_1, scalar = _avgpool2d_core(
-# 				prot, x, pool_size, strides, padding,
-# 		)
-# 		return PondPublicTensor(prot, y_on_0, y_on_1, x.is_scaled) * scalar
+def _avgpool2d_public(
+			prot: Pond,
+			x: PondPublicTensor,
+			pool_size: Tuple[int, int],
+			strides: Tuple[int, int],
+			padding: str,) -> PondPublicTensor:
+	y_on_0, y_on_1, scalar = _avgpool2d_core(prot, x, pool_size, strides, padding,)
 
 
-# def _avgpool2d_private(
-# 		prot: Pond,
-# 		x: PondPrivateTensor,
-# 		pool_size: Tuple[int, int],
-# 		strides: Tuple[int, int],
-# 		padding: str,
-# ) -> PondPrivateTensor:
-
-# 	with tf.name_scope("avgpool2d"):
-# 		y_on_0, y_on_1, scalar = _avgpool2d_core(
-# 				prot, x, pool_size, strides, padding,
-# 		)
-# 		return PondPrivateTensor(prot, y_on_0, y_on_1, x.is_scaled) * scalar
+	return PondPublicTensor(prot, y_on_0, y_on_1, x.is_scaled) * scalar
 
 
-# def _avgpool2d_masked(
-# 		prot: Pond,
-# 		x: PondMaskedTensor,
-# 		pool_size: Tuple[int, int],
-# 		strides: Tuple[int, int],
-# 		padding: str,
-# ) -> PondPrivateTensor:
+def _avgpool2d_private(
+		prot: Pond,
+		x: PondPrivateTensor,
+		pool_size: Tuple[int, int],
+		strides: Tuple[int, int],
+		padding: str,) -> PondPrivateTensor:
 
-# 	with tf.name_scope("avgpool2d"):
-# 		y_on_0, y_on_1, scalar = _avgpool2d_core(
-# 				prot, x.unmasked, pool_size, strides, padding
-# 		)
-# 		return PondPrivateTensor(prot, y_on_0, y_on_1, x.is_scaled) * scalar
+	y_on_0, y_on_1, scalar = _avgpool2d_core( prot, x, pool_size, strides, padding,)
+	
+	res = PondPrivateTensor(prot, y_on_0, y_on_1, x.is_scaled) * scalar
+	# temp = res.reveal()
+	# print(scalar)
+	# print(res.share0.value)
+	# print(res.share1.value)
+
+	# print(y_on_0.value)
+	# print(y_on_1.value)
+	# print(y_on_0.value + y_on_1.value)
+	# input()
+	return res
+
+
+
+def _avgpool2d_masked(
+		prot: Pond,
+		x: PondMaskedTensor,
+		pool_size: Tuple[int, int],
+		strides: Tuple[int, int],
+		padding: str,) -> PondPrivateTensor:
+
+
+	y_on_0, y_on_1, scalar = _avgpool2d_core(prot, x.unmasked, 
+		pool_size, strides, padding)
+	return PondPrivateTensor(prot, y_on_0, y_on_1, x.is_scaled) * scalar
 
 
 # #

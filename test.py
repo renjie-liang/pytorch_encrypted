@@ -100,6 +100,18 @@ set_protocol(prot)
 # print(public_z.value_on_0.value)
 # print(public_z.value_on_1.value)
 
+### test private mul public
+### bug: precise problem
+# x = np.array([[100, 200],[300, 400]])
+# y = 0.25
+# private_x = prot.private_tensor(x)
+
+
+# private_z = private_x * y
+# public_z = private_z.reveal()
+# print(public_z.value_on_0.value)
+# print(public_z.value_on_1.value)
+
 
 # test private add
 #private + private
@@ -169,13 +181,54 @@ set_protocol(prot)
 # private_x = prot.private_tensor(x)
 # D.forward(private_x)
 
-# test Tanh
-from torch_e.layers.activation import Tanh
-batch_size = 2
-in_channels = 3
-input_shape = [batch_size, in_channels]
-D = Tanh(input_shape)
+### test Tanh
+# from torch_e.layers.activation import Tanh
+# batch_size = 2
+# in_channels = 3
+# input_shape = [batch_size, in_channels]
+# D = Tanh(input_shape)
 
-x = np.array([[1, 2, 3],[3,5,6]])
-private_x = prot.private_tensor(x)
-D.forward(private_x)
+# x = np.array([[1, 2, 3],[3,5,6]])
+# private_x = prot.private_tensor(x)
+# D.forward(private_x)
+
+## test AveragePooling2D 
+### bug: precise problem
+# from torch_e.layers.pooling import AveragePooling2D
+# batch_size = 1
+# in_channels = 1
+# h_in = 4
+# w_in = 4
+# input_shape = [batch_size, in_channels, h_in, w_in]
+# x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
+
+# D = AveragePooling2D(input_shape = input_shape,
+# 				pool_size = 2, 
+# 				strides = None,
+# 				padding ="SAME", channels_first = True)
+
+# # print(D.get_output_shape())
+# private_x = prot.private_tensor(x)
+# pool_private_x = D.forward(private_x)
+
+# print(x)
+# temp = pool_private_x.reveal()
+# print(temp.value_on_0.value)
+# input()
+
+
+### test MaxPooling2D 
+### debug  Only SecureNN supports Max Pooling
+# from torch_e.layers.pooling import MaxPooling2D
+# batch_size, in_channels, h_in, w_in = 1, 1, 4, 4
+# input_shape = [batch_size, in_channels, h_in, w_in]
+# x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
+
+# D = MaxPooling2D(input_shape = input_shape,
+# 				pool_size = 2, 
+# 				strides = None,
+# 				padding ="SAME", channels_first = True)
+
+# # print(D.get_output_shape())
+# private_x = prot.private_tensor(x)
+# pool_private_x = D.forward(private_x)
