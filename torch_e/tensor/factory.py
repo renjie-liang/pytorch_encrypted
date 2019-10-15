@@ -80,9 +80,9 @@ class AbstractFactory(abc.ABC):
 	 def sample_uniform(self, shape,minval: Optional[int] = None, maxval: Optional[int] = None):
 		 """ Sample uniform random value of this data type. """
 
-	 # @abc.abstractmethod
-	 # def sample_bounded(self, shape, bitlength: int):
-		#  """ Sample uniform random value of this data type. """
+	 @abc.abstractmethod
+	 def sample_bounded(self, shape, bitlength: int):
+		 """ Sample uniform random value of this data type. """
 
 	 # @abc.abstractmethod
 	 # def stack(self, xs: list, axis: int = 0):

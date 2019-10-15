@@ -116,28 +116,22 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 
 		def sample_uniform_mask(self, shape, minval: Optional[int] = None,  maxval: Optional[int] = None):
 			pass
-		# def sample_bounded(self, shape, bitlength: int):
-		# 	maxval = 2 ** bitlength
-		# 	assert maxval <= self.max
 
-		# 	if secure_random.supports_seeded_randomness():
-		# 		seed = secure_random.secure_seed()
-		# 		return UniformTensor(shape=shape,
-		# 												 seed=seed,
-		# 												 minval=0,
-		# 												 maxval=maxval)
+		def sample_bounded(self, shape, bitlength: int):
+			maxval = 2 ** bitlength
+			assert maxval <= self.max
 
-		# 	if secure_random.supports_secure_randomness():
-		# 		sampler = secure_random.random_uniform
-		# 	else:
-		# 		sampler = tf.random_uniform
-		# 	value = sampler(
-		# 			shape=shape,
-		# 			minval=0,
-		# 			maxval=maxval,
-		# 			dtype=NATIVE_TYPE
-		# 	)
-		# 	return DenseTensor(value)
+			# if secure_random.supports_seeded_randomness():
+			# 	seed = secure_random.secure_seed()
+			# 	return UniformTensor(shape=shape, seed=seed, minval=0, maxval=maxval)
+
+			# if secure_random.supports_secure_randomness():
+			# 	sampler = secure_random.random_uniform
+			# else:
+			# 	sampler = tf.random_uniform
+			sampler = torch.randint
+			value = sampler(low=0 , high = maxval, size = shape, dtype=NATIVE_TYPE)
+			return DenseTensor(value)
 
 		# def sample_bits(self, shape):
 		# 	return self.sample_bounded(shape, bitlength=1)
@@ -293,11 +287,11 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		# 	value = tf.space_to_batch_nd(self.value, block_shape, paddings)
 		# 	return DenseTensor(value)
 
-		# def mod(self, k: int):
-		# 	value = self.value % k
-		# 	if EXPLICIT_MODULUS is not None:
-		# 		value %= EXPLICIT_MODULUS
-		# 	return DenseTensor(value)
+		def mod(self, k: int):
+			value = self.value % k
+			if EXPLICIT_MODULUS is not None:
+				value %= EXPLICIT_MODULUS
+			return DenseTensor(value)
 
 		# def transpose(self, perm):
 		# 	return DenseTensor(tf.transpose(self.value, perm))
@@ -346,15 +340,21 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			factory = factory or FACTORY
 			return factory.tensor(x.value == y.value)
 
-		# def truncate(self, amount, base=2):
-		# 	if base == 2:
-		# 		return self.right_shift(amount)
-		# 	factor = base**amount
-		# 	factor_inverse = inverse(factor, self.factory.modulus)
-		# 	return (self - (self % factor)) * factor_inverse
+		def truncate(self, amount, base=2):
 
-		# def right_shift(self, bitlength):
-		# 	return DenseTensor(tf.bitwise.right_shift(self.value, bitlength))
+			if base == 2:
+				return self.right_shift(amount)
+
+			factor = base**amount
+			factor_inverse = inverse(factor, self.factory.modulus)
+			return (self - (self % factor)) * factor_inverse
+
+		def right_shift(self, bitlength):
+			x_np = self.value.numpy()
+			x_np = np.right_shift(x_np, bitlength)
+			x = torch.from_numpy(x_np) 
+
+			return DenseTensor(x)
 
 		# def expand_dims(self, axis: Optional[int] = None):
 		# 	return DenseTensor(tf.expand_dims(self.value, axis))

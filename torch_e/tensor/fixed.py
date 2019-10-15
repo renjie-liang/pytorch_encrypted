@@ -69,14 +69,23 @@ fixed100_ni = FixedpointConfig(
 
 # TODO[Morten] make sure values in int64 configs make sense
 
+# fixed64 = FixedpointConfig(
+# 		scaling_base=3,
+# 		precision_integral=7,
+# 		precision_fractional=8,
+# 		matmul_threshold=256,
+# 		truncation_gap=20,
+# 		use_noninteractive_truncation=False,
+# )
 fixed64 = FixedpointConfig(
-		scaling_base=3,
-		precision_integral=7,
-		precision_fractional=8,
+		scaling_base=2,
+		precision_integral=10,
+		precision_fractional=13,
 		matmul_threshold=256,
 		truncation_gap=20,
-		use_noninteractive_truncation=False,
+		use_noninteractive_truncation=True,
 )
+
 
 fixed64_ni = FixedpointConfig(
 		scaling_base=2,

@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 # from ...utils import wrap_in_variables
-# from ...tensor.helpers import inverse
+from ...tensor.helpers import inverse
 from ...tensor.factory import (
 		AbstractFactory,
 		AbstractTensor,
@@ -874,9 +874,8 @@ class Pond(Protocol):
 # 		s0, s1 = self._share(secret)
 # 		return PondPrivateTensor(self, s0, s1, is_scaled)
 
-# 	def _reconstruct(self, share0, share1):
-# 		with tf.name_scope("reconstruct"):
-# 			return share0 + share1
+	def _reconstruct(self, share0, share1):
+		return share0 + share1
 
 # 	@memoize
 # 	def assign(self, variable: "PondPrivateVariable", value) -> tf.Operation:
@@ -1034,14 +1033,14 @@ class Pond(Protocol):
 
 		return x_masked
 
-# 	@memoize
-# 	def mul(self, x, y):
-# 		x, y = self.lift(x, y)
-# 		return self.dispatch("mul", x, y)
+	@memoize
+	def mul(self, x, y):
+		x, y = self.lift(x, y)
+		return self.dispatch("mul", x, y)
 
-# 	@memoize
-# 	def square(self, x):
-# 		return self.dispatch("square", x)
+	@memoize
+	def square(self, x):
+		return self.dispatch("square", x)
 
 	@memoize
 	def matmul(self, x: "PondTensor", y: "PondTensor") -> "PondTensor":
@@ -1075,9 +1074,9 @@ class Pond(Protocol):
 
 	# 	return self.mul(x, y_inverse)
 
-# 	@memoize
-# 	def truncate(self, x: "PondTensor"):
-# 		return self.dispatch("truncate", x)
+	@memoize
+	def truncate(self, x: "PondTensor"):
+		return self.dispatch("truncate", x)
 
 # 	@memoize
 # 	def indexer(self, x: "PondTensor", slc) -> "PondTensor":
@@ -1257,98 +1256,94 @@ class Pond(Protocol):
 
 # 		raise TypeError("Don't know how to do a concat {}".format(type(xs)))
 
-# 	@memoize
-# 	def sigmoid(self, x: "PondTensor"):
-# 		"""A Chebyshev polynomial approximation of the sigmoid function."""
-# 		assert isinstance(x, PondTensor), type(x)
+	@memoize
+	def sigmoid(self, x: "PondTensor"):
+		"""A Chebyshev polynomial approximation of the sigmoid function."""
+		assert isinstance(x, PondTensor), type(x)
 
-# 		w0 = 0.5
-# 		w1 = 0.2159198015
-# 		w3 = -0.0082176259
-# 		w5 = 0.0001825597
-# 		w7 = -0.0000018848
-# 		w9 = 0.0000000072
+		w0 = 0.5
+		w1 = 0.2159198015
+		w3 = -0.0082176259
+		w5 = 0.0001825597
+		w7 = -0.0000018848
+		w9 = 0.0000000072
 
-# 		with tf.name_scope("sigmoid"):
 
-# 			# TODO[Morten] try in single round
-# 			x1 = x
-# 			x2 = x1.square()
-# 			x3 = x2 * x
-# 			x5 = x2 * x3
-# 			x7 = x2 * x5
-# 			x9 = x2 * x7
+		# TODO[Morten] try in single round
+		x1 = x
+		x2 = x1.square()
+		x3 = x2 * x
+		x5 = x2 * x3
+		x7 = x2 * x5
+		x9 = x2 * x7
 
-# 			y1 = x1 * w1
-# 			y3 = x3 * w3
-# 			y5 = x5 * w5
-# 			y7 = x7 * w7
-# 			y9 = x9 * w9
+		y1 = x1 * w1
+		y3 = x3 * w3
+		y5 = x5 * w5
+		y7 = x7 * w7
+		y9 = x9 * w9
 
-# 			z = y9 + y7 + y5 + y3 + y1 + w0
-# 			# z = y7 + y5 + y3 + y1 + w0
+		z = y9 + y7 + y5 + y3 + y1 + w0
+		# z = y7 + y5 + y3 + y1 + w0
 
-# 		return z
+		return z
 
-# 	@memoize
-# 	def relu(self, x: "PondTensor", **kwargs):	# pylint: disable=unused-argument
-# 		"""A Chebyshev polynomial approximation of the ReLU function."""
-# 		assert isinstance(x, PondTensor), type(x)
+	@memoize
+	def relu(self, x: "PondTensor", **kwargs):	# pylint: disable=unused-argument
+		"""A Chebyshev polynomial approximation of the ReLU function."""
+		assert isinstance(x, PondTensor), type(x)
 
-# 		w0 = 0.44015372000819103
-# 		w1 = 0.500000000
-# 		w2 = 0.11217537671414643
-# 		w4 = -0.0013660836712429923
-# 		w6 = 9.009136367360004e-06
-# 		w8 = -2.1097433984e-08
+		w0 = 0.44015372000819103
+		w1 = 0.500000000
+		w2 = 0.11217537671414643
+		w4 = -0.0013660836712429923
+		w6 = 9.009136367360004e-06
+		w8 = -2.1097433984e-08
 
-# 		with tf.name_scope("relu"):
 
-# 			x1 = x
-# 			x2 = x.square()
-# 			x4 = x2 * x2
-# 			x6 = x2 * x4
-# 			x8 = x2 * x6
+		x1 = x
+		x2 = x.square()
+		x4 = x2 * x2
+		x6 = x2 * x4
+		x8 = x2 * x6
 
-# 			y1 = x1 * w1
-# 			y2 = x2 * w2
-# 			y4 = x4 * w4
-# 			y6 = x6 * w6
-# 			y8 = x8 * w8
+		y1 = x1 * w1
+		y2 = x2 * w2
+		y4 = x4 * w4
+		y6 = x6 * w6
+		y8 = x8 * w8
 
-# 			z = y8 + y6 + y4 + y2 + y1 + w0
+		z = y8 + y6 + y4 + y2 + y1 + w0
 
-# 		return z
+		return z
 
-# 	@memoize
-# 	def tanh(self, x: "PondTensor"):
-# 		"""
-# 		A Chebyshev polynomial approximation of the hyperbolic tangent function.
-# 		"""
-# 		assert isinstance(x, PondTensor), type(x)
+	@memoize
+	def tanh(self, x: "PondTensor"):
+		"""
+		A Chebyshev polynomial approximation of the hyperbolic tangent function.
+		"""
+		assert isinstance(x, PondTensor), type(x)
 
-# 		w0 = 0.0
-# 		w1 = 0.852721056
-# 		w3 = -0.12494112
-# 		w5 = 0.010654528
-# 		w7 = -0.000423424
+		w0 = 0.0
+		w1 = 0.852721056
+		w3 = -0.12494112
+		w5 = 0.010654528
+		w7 = -0.000423424
 
-# 		with tf.name_scope("relu"):
+		x1 = x
+		x2 = x.square()
+		x3 = x2 * x1
+		x5 = x2 * x3
+		x7 = x2 * x5
 
-# 			x1 = x
-# 			x2 = x.square()
-# 			x3 = x2 * x1
-# 			x5 = x2 * x3
-# 			x7 = x2 * x5
+		y1 = x1 * w1
+		y3 = x3 * w3
+		y5 = x5 * w5
+		y7 = x7 * w7
 
-# 			y1 = x1 * w1
-# 			y3 = x3 * w3
-# 			y5 = x5 * w5
-# 			y7 = x7 * w7
+		z = y7 + y5 + y3 + y1 + w0
 
-# 			z = y7 + y5 + y3 + y1 + w0
-
-# 		return z
+		return z
 
 # 	def log(self, x: "PondTensor"):
 # 		"""
@@ -1770,21 +1765,21 @@ class PondTensor(abc.ABC):
 # 	def __rsub__(self, other):
 # 		return self.prot.sub(other, self)
 
-# 	def mul(self, other):
-# 		"""
-# 		Multiply this tensor with `other`
+	def mul(self, other):
+		"""
+		Multiply this tensor with `other`
 
-# 		:param PondTensor other: to multiply
-# 		:return: A new PondTensor
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.mul(self, other)
+		:param PondTensor other: to multiply
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.mul(self, other)
 
-# 	def __mul__(self, other):
-# 		return self.prot.mul(self, other)
+	def __mul__(self, other):
+		return self.prot.mul(self, other)
 
-# 	def __rmul__(self, other):
-# 		return self.prot.mul(self, other)
+	def __rmul__(self, other):
+		return self.prot.mul(self, other)
 
 # 	def __truediv__(self, other):
 # 		return self.prot.div(self, other)
@@ -1792,14 +1787,14 @@ class PondTensor(abc.ABC):
 # 	def __mod__(self, other):
 # 		return self.prot.mod(self, other)
 
-# 	def square(self):
-# 		"""
-# 		Square this tensor.
+	def square(self):
+		"""
+		Square this tensor.
 
-# 		:return: A new PondTensor
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.square(self)
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.square(self)
 
 	def matmul(self, other):
 		"""
@@ -2136,7 +2131,7 @@ class PondConstant(PondPublicTensor):
 # 		return "PondPublicPlaceholder(shape={})".format(self.shape)
 
 
-# class PondPrivatePlaceholder(PondPrivateTensor):
+# class  (PondPrivateTensor):
 # 	"""
 # 	This class essentially represents a private value, however it additionally
 # 	records the fact that the backing tensor was declared as a placeholder in
@@ -2521,97 +2516,112 @@ def _type(x):
 # 	return PondPublicTensor(prot, y_on_0, y_on_1, x.is_scaled)
 
 
-# def _truncate_private(prot: Pond, x: PondPrivateTensor) -> PondPrivateTensor:
-# 	assert isinstance(x, PondPrivateTensor)
+def _truncate_private(prot: Pond, x: PondPrivateTensor) -> PondPrivateTensor:
+	assert isinstance(x, PondPrivateTensor)
 
-# 	if prot.fixedpoint_config.use_noninteractive_truncation:
-# 		return _truncate_private_noninteractive(prot, x)
-
-# 	return _truncate_private_interactive(prot, x)
-
-
-# def _truncate_private_noninteractive(
-# 		prot: Pond, x: PondPrivateTensor
-# ) -> PondPrivateTensor:
-# 	assert isinstance(x, PondPrivateTensor)
-
-# 	base = prot.fixedpoint_config.scaling_base
-# 	amount = prot.fixedpoint_config.precision_fractional
-# 	x0, x1 = x.unwrapped
-
-# 	with tf.name_scope("truncate-ni"):
-
-# 		with tf.device(prot.server_0.device_name):
-# 			y0 = x0.truncate(amount, base)
-
-# 		with tf.device(prot.server_1.device_name):
-# 			y1 = 0 - (0 - x1).truncate(amount, base)
-
-# 	return PondPrivateTensor(prot, y0, y1, x.is_scaled)
+	if prot.fixedpoint_config.use_noninteractive_truncation:
+		return _truncate_private_noninteractive(prot, x)
+	return _truncate_private_interactive(prot, x)
 
 
-# def _truncate_private_interactive(
-# 		prot: Pond, a: PondPrivateTensor
-# ) -> PondPrivateTensor:
-# 	"""See protocol TruncPr (3.1) in
-# 	"Secure Computation With Fixed-Point Numbers" by Octavian Catrina and Amitabh
-# 	Saxena, FC'10."""
+def _truncate_private_noninteractive(
+		prot: Pond, x: PondPrivateTensor ) -> PondPrivateTensor:
+	assert isinstance(x, PondPrivateTensor)
 
-# 	with tf.name_scope("truncate-i"):
+	base = prot.fixedpoint_config.scaling_base
+	amount = prot.fixedpoint_config.precision_fractional
+	x0, x1 = x.unwrapped
 
-# 		scaling_factor = prot.fixedpoint_config.scaling_factor
-# 		scaling_factor_inverse = inverse(
-# 				prot.fixedpoint_config.scaling_factor, prot.tensor_factory.modulus
-# 		)
+	# in prot.server_0.device_name
+	y0 = x0.truncate(amount, base)
 
-# 		# we first rotate `a` to make sure reconstructed values fall into
-# 		# a non-negative interval `[0, 2B)` for some bound B; this uses an
-# 		# assumption that the values originally lie in `[-B, B)`, and will
-# 		# leak private information otherwise
+	# in prot.server_1.device_name
+	y1 = 0 - (0 - x1).truncate(amount, base)
 
-# 		# 'a + bound' will automatically lift 'bound' by another scaling factor,
-# 		# so we should first divide bound by the scaling factor if we want to
-# 		# use this convenient '+' operation.
-# 		bound = prot.fixedpoint_config.bound_double_precision
-# 		b = a + (bound / scaling_factor)
+	return PondPrivateTensor(prot, y0, y1, x.is_scaled)
 
-# 		# next step is for server0 to add a statistical mask to `b`, reveal
-# 		# it to server1, and compute the lower part
-# 		trunc_gap = prot.fixedpoint_config.truncation_gap
-# 		mask_bitlength = ceil(log2(bound)) + 1 + trunc_gap
+### this fun has bug
+def _truncate_private_interactive(
+	prot: Pond, a: PondPrivateTensor) -> PondPrivateTensor:
+	"""See protocol TruncPr (3.1) in
+	"Secure Computation With Fixed-Point Numbers" by Octavian Catrina and Amitabh
+	Saxena, FC'10."""
 
-# 		b0, b1 = b.unwrapped
-# 		shape = a.shape
 
-# 		with tf.device(prot.server_0.device_name):
-# 			r = prot.tensor_factory.sample_bounded(shape, mask_bitlength)
-# 			c0 = b0 + r
 
-# 		with tf.device(prot.server_1.device_name):
-# 			c1 = b1
-# 			c_lower = prot._reconstruct(c0, c1) % scaling_factor	# pylint: disable=protected-access
+	scaling_factor = prot.fixedpoint_config.scaling_factor
+	# print(scaling_factor)
+	# print(prot.tensor_factory.modulus)
+	# input()
 
-# 		# then use the lower part of the masked value to compute lower part
-# 		# of original value
+	# what is this fun get model inverse
+	scaling_factor_inverse = inverse(
+			prot.fixedpoint_config.scaling_factor, prot.tensor_factory.modulus
+	)
 
-# 		with tf.device(prot.server_0.device_name):
-# 			r_lower = r % scaling_factor
-# 			a_lower0 = r_lower * -1
 
-# 		with tf.device(prot.server_1.device_name):
-# 			a_lower1 = c_lower
+	bound = prot.fixedpoint_config.bound_double_precision
+	b = a + (bound / scaling_factor)
 
-# 		# finally subtract and multiply by inverse
+	trunc_gap = prot.fixedpoint_config.truncation_gap
+	mask_bitlength = ceil(log2(bound)) + 1 + trunc_gap
 
-# 		a0, a1 = a.unwrapped
 
-# 		with tf.device(prot.server_0.device_name):
-# 			d0 = (a0 - a_lower0) * scaling_factor_inverse
+	b0, b1 = b.unwrapped
+	shape = a.shape
 
-# 		with tf.device(prot.server_1.device_name):
-# 			d1 = (a1 - a_lower1) * scaling_factor_inverse
+	# in prot.server_0.device_name
+	r = prot.tensor_factory.sample_bounded(shape, mask_bitlength)
+	c0 = b0 + r
 
-# 	return PondPrivateTensor(prot, d0, d1, a.is_scaled)
+	# in prot.server_1.device_name
+	c1 = b1
+	c_lower = prot._reconstruct(c0, c1) % scaling_factor	# pylint: disable=protected-access
+
+
+	# in prot.server_0.device_name
+	r_lower = r % scaling_factor
+	a_lower0 = r_lower * -1
+
+	# in prot.server_1.device_name
+	a_lower1 = c_lower
+
+
+	a0, a1 = a.unwrapped
+
+	# in prot.server_0.device_name
+	# print("--" * 40)
+	# print((a0 - a_lower0))
+	# print(scaling_factor_inverse)
+
+
+	d0 = (a0 - a_lower0) * scaling_factor_inverse
+
+	# print("--" * 40)
+	# input()
+	# in prot.server_1.device_name
+	d1 = (a1 - a_lower1) * scaling_factor_inverse
+
+		# we first rotate `a` to make sure reconstructed values fall into
+		# a non-negative interval `[0, 2B)` for some bound B; this uses an
+		# assumption that the values originally lie in `[-B, B)`, and will
+		# leak private information otherwise
+
+		# 'a + bound' will automatically lift 'bound' by another scaling factor,
+		# so we should first divide bound by the scaling factor if we want to
+		# use this convenient '+' operation.
+
+
+		# next step is for server0 to add a statistical mask to `b`, reveal
+		# it to server1, and compute the lower part
+
+
+		# then use the lower part of the masked value to compute lower part
+		# of original value
+
+
+
+	return PondPrivateTensor(prot, d0, d1, a.is_scaled)
 
 
 # def _truncate_masked(prot: Pond, x: PondMaskedTensor) -> PondMaskedTensor:
@@ -2691,24 +2701,21 @@ def _reveal_private(prot, x):
 # 	return prot.add(x, y.unmasked)
 
 
-# def _add_private_public(prot, x, y):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	assert isinstance(y, PondPublicTensor), type(y)
-# 	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
-# 																			"{} {}").format(x.is_scaled, y.is_scaled)
+def _add_private_public(prot, x, y):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	assert isinstance(y, PondPublicTensor), type(y)
+	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: ""{} {}").format(x.is_scaled, y.is_scaled)
 
-# 	x0, x1 = x.unwrapped
-# 	y_on_0, _ = y.unwrapped
+	x0, x1 = x.unwrapped
+	y_on_0, _ = y.unwrapped
 
-# 	with tf.name_scope("add"):
+	# in prot.server_0.device_name
+	z0 = x0 + y_on_0
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z0 = x0 + y_on_0
+	# in prot.server_1.device_name
+	z1 = x1
 
-# 		with tf.device(prot.server_1.device_name):
-# 			z1 = x1
-
-# 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
+	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
 def _add_private_private(prot, x, y):
@@ -3034,30 +3041,29 @@ def _add_private_private(prot, x, y):
 # 	return prot.mul(x, y.unmasked)
 
 
-# def _mul_private_public(prot, x, y):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	assert isinstance(y, PondPublicTensor), type(y)
+def _mul_private_public(prot, x, y):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	assert isinstance(y, PondPublicTensor), type(y)
 
-# 	x0, x1 = x.unwrapped
-# 	y_on_0, y_on_1 = y.unwrapped
+	x0, x1 = x.unwrapped
+	y_on_0, y_on_1 = y.unwrapped
 
-# 	with tf.name_scope("mul"):
+	# in prot.server_0.device_name
+	z0 = x0 * y_on_0
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z0 = x0 * y_on_0
-
-# 		with tf.device(prot.server_1.device_name):
-# 			z1 = x1 * y_on_1
-
-# 		z = PondPrivateTensor(prot, z0, z1, x.is_scaled or y.is_scaled)
-# 		z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
-# 		return z
+	# in prot.server_1.device_name
+	z1 = x1 * y_on_1
 
 
-# def _mul_private_private(prot, x, y):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	assert isinstance(y, PondPrivateTensor), type(y)
-# 	return prot.mul(prot.mask(x), prot.mask(y))
+	z = PondPrivateTensor(prot, z0, z1, x.is_scaled or y.is_scaled)
+	z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
+	return z
+
+
+def _mul_private_private(prot, x, y):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	assert isinstance(y, PondPrivateTensor), type(y)
+	return prot.mul(prot.mask(x), prot.mask(y))
 
 
 # def _mul_private_masked(prot, x, y):
@@ -3078,32 +3084,29 @@ def _add_private_private(prot, x, y):
 # 	return prot.mul(x, prot.mask(y))
 
 
-# def _mul_masked_masked(prot, x, y):
-# 	assert isinstance(x, PondMaskedTensor), type(x)
-# 	assert isinstance(y, PondMaskedTensor), type(y)
+def _mul_masked_masked(prot, x, y):
+	assert isinstance(x, PondMaskedTensor), type(x)
+	assert isinstance(y, PondMaskedTensor), type(y)
 
-# 	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
-# 	b, b0, b1, beta_on_0, beta_on_1 = y.unwrapped
+	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
+	b, b0, b1, beta_on_0, beta_on_1 = y.unwrapped
 
-# 	with tf.name_scope("mul"):
+	ab0, ab1 = prot.triple_source.mul_triple(a, b)
 
-# 		ab0, ab1 = prot.triple_source.mul_triple(a, b)
+	# .to(prot.server_0.device_name)
+	alpha = alpha_on_0
+	beta = beta_on_0
+	z0 = ab0 + (a0 * beta) + (alpha * b0) + (alpha * beta)
 
-# 		with tf.device(prot.server_0.device_name):
-# 			with tf.name_scope("combine"):
-# 				alpha = alpha_on_0
-# 				beta = beta_on_0
-# 				z0 = ab0 + (a0 * beta) + (alpha * b0) + (alpha * beta)
+	
+	# .to(prot.server_1.device_name)
+	alpha = alpha_on_1
+	beta = beta_on_1
+	z1 = ab1 + (a1 * beta) + (alpha * b1)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			with tf.name_scope("combine"):
-# 				alpha = alpha_on_1
-# 				beta = beta_on_1
-# 				z1 = ab1 + (a1 * beta) + (alpha * b1)
-
-# 		z = PondPrivateTensor(prot, z0, z1, x.is_scaled or y.is_scaled)
-# 		z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
-# 		return z
+	z = PondPrivateTensor(prot, z0, z1, x.is_scaled or y.is_scaled)
+	z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
+	return z
 
 
 # #
@@ -3170,33 +3173,32 @@ def _add_private_private(prot, x, y):
 # 		return y
 
 
-# def _square_private(prot, x):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	return prot.square(prot.mask(x))
+def _square_private(prot, x):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	return prot.square(prot.mask(x))
 
 
-# def _square_masked(prot, x):
-# 	assert isinstance(x, PondMaskedTensor), type(x)
+def _square_masked(prot, x):
+	assert isinstance(x, PondMaskedTensor), type(x)
 
-# 	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
+	a, a0, a1, alpha_on_0, alpha_on_1 = x.unwrapped
 
-# 	with tf.name_scope("square"):
+	# in server_2
+	aa0, aa1 = prot.triple_source.square_triple(a)
 
-# 		aa0, aa1 = prot.triple_source.square_triple(a)
+	# in prot.server_0.device_name
+	alpha = alpha_on_0
+	y0 = aa0 + (a0 * alpha) * 2 + (alpha * alpha)
 
-# 		with tf.device(prot.server_0.device_name):
-# 			with tf.name_scope("combine"):
-# 				alpha = alpha_on_0
-# 				y0 = aa0 + (a0 * alpha) * 2 + (alpha * alpha)
+	# in prot.server_1.device_name
+	alpha = alpha_on_1
+	y1 = aa1 + (a1 * alpha) * 2
 
-# 		with tf.device(prot.server_1.device_name):
-# 			with tf.name_scope("combine"):
-# 				alpha = alpha_on_1
-# 				y1 = aa1 + (a1 * alpha) * 2
 
-# 		y = PondPrivateTensor(prot, y0, y1, x.is_scaled)
-# 		y = prot.truncate(y) if y.is_scaled else y
-# 		return y
+
+	y = PondPrivateTensor(prot, y0, y1, x.is_scaled)
+	y = prot.truncate(y) if y.is_scaled else y
+	return y
 
 
 # #

@@ -134,14 +134,48 @@ set_protocol(prot)
 
 # test Dense
 
-from torch_e.layers.dense import Dense
+# from torch_e.layers.dense import Dense
+# batch_size = 2
+# in_channels = 3
+# input_shape = [batch_size, in_channels]
+# D = Dense(input_shape = input_shape, out_features = 4, transpose_input=False, transpose_weight=False)
+
+# x = np.array([[1, 2, 3],[3,5,6]])
+# private_x = prot.private_tensor(x)
+# D.initialize()
+
+# D.forward(private_x)
+
+# test sigmoid
+# from torch_e.layers.activation import Sigmoid
+# batch_size = 2
+# in_channels = 3
+# input_shape = [batch_size, in_channels]
+# D = Sigmoid(input_shape)
+
+# x = np.array([[1, 2, 3],[3,5,6]])
+# private_x = prot.private_tensor(x)
+# D.forward(private_x)
+
+
+# test Relu
+# from torch_e.layers.activation import Relu
+# batch_size = 2
+# in_channels = 3
+# input_shape = [batch_size, in_channels]
+# D = Relu(input_shape)
+
+# x = np.array([[1, 2, 3],[3,5,6]])
+# private_x = prot.private_tensor(x)
+# D.forward(private_x)
+
+# test Tanh
+from torch_e.layers.activation import Tanh
 batch_size = 2
 in_channels = 3
 input_shape = [batch_size, in_channels]
-D = Dense(input_shape = input_shape, out_features = 4, transpose_input=False, transpose_weight=False)
+D = Tanh(input_shape)
 
 x = np.array([[1, 2, 3],[3,5,6]])
 private_x = prot.private_tensor(x)
-D.initialize()
-
 D.forward(private_x)

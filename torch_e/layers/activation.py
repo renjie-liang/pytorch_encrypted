@@ -2,7 +2,7 @@
 """Various activation functions implemented as Layer objects."""
 from typing import List
 
-from tf_encrypted.layers.core import Layer
+from torch_e.layers.core import Layer
 
 backward_msg = "`backward` is not implemented for layer {}"
 

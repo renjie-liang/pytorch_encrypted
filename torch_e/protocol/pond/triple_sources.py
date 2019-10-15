@@ -52,23 +52,20 @@ class BaseTripleSource(TripleSource):
 		return a, d0, d1
 ### ------------------testing here ------------------###
 
-	# def mul_triple(self, a, b):
+	def mul_triple(self, a, b):
 
-	# 	with tf.name_scope("triple-generation"):
-	# 		with tf.device(self.producer.device_name):
-	# 			ab = a * b
-	# 			ab0, ab1 = self._share(ab)
+		# in self.producer.device_name
+		ab = a * b
+		ab0, ab1 = self._share(ab)
+		return self._build_queues(ab0, ab1)
 
-	# 	return self._build_queues(ab0, ab1)
+	def square_triple(self, a):
+		a.to(self.producer.device_name)
 
-	# def square_triple(self, a):
+		aa = a * a
+		aa0, aa1 = self._share(aa)
 
-	# 	with tf.name_scope("triple-generation"):
-	# 		with tf.device(self.producer.device_name):
-	# 			aa = a * a
-	# 			aa0, aa1 = self._share(aa)
-
-	# 	return self._build_queues(aa0, aa1)
+		return self._build_queues(aa0, aa1)
 
 	def matmul_triple(self, a, b):
 		a.to(self.producer.device_name)
