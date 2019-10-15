@@ -38,14 +38,14 @@ import numpy as np
 # sample = int32factory.sample_uniform([2,2])
 # print(int32factory.modulus)
 # print(sample.value)
-from torch_e.protocol.pond import pond
-from torch_e.protocol.protocol import get_protocol, set_protocol
-from torch_e.protocol.pond.pond import Pond
-prot = Pond()
-prot.server_0.device_name = 'cpu'
-prot.server_1.device_name = 'cpu'
-prot.triple_source.device_name = 'cpu'
-set_protocol(prot)
+# from torch_e.protocol.pond import pond
+# from torch_e.protocol.protocol import get_protocol, set_protocol
+# from torch_e.protocol.pond.pond import Pond
+# prot = Pond()
+# prot.server_0.device_name = 'cpu'
+# prot.server_1.device_name = 'cpu'
+# prot.triple_source.device_name = 'cpu'
+# set_protocol(prot)
 
 
 # TestPond
@@ -232,3 +232,30 @@ set_protocol(prot)
 # # print(D.get_output_shape())
 # private_x = prot.private_tensor(x)
 # pool_private_x = D.forward(private_x)
+
+### test SecureNN
+
+from torch_e.protocol.securenn import SecureNN
+from torch_e.protocol.protocol import get_protocol, set_protocol
+from torch_e.protocol.pond.pond import Pond
+prot = SecureNN()
+prot.server_0.device_name = 'cpu'
+prot.server_1.device_name = 'cpu'
+prot.triple_source.device_name = 'cpu'
+set_protocol(prot)
+
+## test MaxPooling2D 
+## debug  Only SecureNN supports Max Pooling
+from torch_e.layers.pooling import MaxPooling2D
+batch_size, in_channels, h_in, w_in = 1, 1, 4, 4
+input_shape = [batch_size, in_channels, h_in, w_in]
+x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
+
+D = MaxPooling2D(input_shape = input_shape,
+				pool_size = 2, 
+				strides = None,
+				padding ="SAME", channels_first = True)
+
+# print(D.get_output_shape())
+private_x = prot.private_tensor(x)
+pool_private_x = D.forward(private_x)

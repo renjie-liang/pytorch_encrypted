@@ -15,6 +15,7 @@ from .factory import (AbstractFactory, AbstractTensor, AbstractVariable,
 											AbstractConstant, AbstractPlaceholder)
 # from .helpers import inverse
 # from .shared import binarize, conv2d, im2col
+from .shared import im2col
 # from ..operations import secure_random
 
 
@@ -268,9 +269,9 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		def mm(self, other):
 			return self.matmul(other)
 
-		# def im2col(self, h_filter, w_filter, padding, stride):
-		# 	i2c = im2col(self.value, h_filter, w_filter, padding, stride)
-		# 	return DenseTensor(i2c)
+		def im2col(self, h_filter, w_filter, padding, stride):
+			i2c = im2col(self.value, h_filter, w_filter, padding, stride)
+			return DenseTensor(i2c)
 
 		# def conv2d(self, other, stride: int, padding: str = 'SAME'):
 		# 	if EXPLICIT_MODULUS is not None:

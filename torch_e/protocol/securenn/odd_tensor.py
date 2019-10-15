@@ -1,7 +1,7 @@
 # """Odd tensors abstraction. For internal use with SecureNN subprotocols."""
 from __future__ import absolute_import
 from typing import Tuple, Optional
-# from functools import partial
+from functools import partial
 
 import abc
 import math
@@ -9,8 +9,7 @@ import math
 import torch
 import numpy as np
 
-# from ...tensor.factory import AbstractTensor
-from factory import AbstractTensor
+from ...tensor.factory import AbstractTensor
 # from ...tensor.shared import binarize
 # from ...operations import secure_random
 
