@@ -414,6 +414,8 @@ class SecureNN(Pond):
 		}
 
 		func = dispatch.get(_type(x), None)
+		print(func)
+		input()
 		if func is None:
 			raise TypeError("Don't know how to avgpool2d {}".format(type(x)))
 
@@ -780,8 +782,7 @@ def _im2col(prot: Pond,
 	return y_on_0, y_on_1, [out_height, out_width, int(batch), int(channels)]
 
 
-def _maxpool2d_public(prot: Pond,
-						x: PondPublicTensor,
+def (prot: Pond,: PondPublicTensor,
 						pool_size: Tuple[int, int],
 						strides: Tuple[int, int],
 						padding: str) -> PondPublicTensor:
