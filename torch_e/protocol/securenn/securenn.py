@@ -401,6 +401,7 @@ class SecureNN(Pond):
 			convolution.
 		:param str padding: Which type of padding to use ("SAME" or "VALID").
 		"""
+
 		node_key = ('maxpool2d', x, tuple(pool_size), tuple(strides), padding)
 		z = nodes.get(node_key, None)
 
@@ -751,9 +752,7 @@ class SecureNN(Pond):
 # # max pooling helpers
 # #
 
-def _im2col(prot: Pond,
-			x: PondTensor,
-			pool_size: Tuple[int, int],
+def _im2col(prot: Pond, x: PondTensor, pool_size: Tuple[int, int],
 			strides: Tuple[int, int],
 			padding: str) -> Tuple[AbstractTensor, AbstractTensor]:
 	"""Compute im2col on a tensor."""
@@ -771,8 +770,13 @@ def _im2col(prot: Pond,
 	batch, channels, height, width = x.shape
 	pool_height, pool_width = pool_size
 
+	print('_im2col')
+	input()
 	#with tf.device(prot.server_0.device_name):
 	x_split = x_on_0.reshape((batch * channels, 1, height, width))
+	print(x_split)
+	input()
+	
 	y_on_0 = x_split.im2col(pool_height, pool_width, padding, strides[0])
 
 	with tf.device(prot.server_1.device_name):
@@ -782,7 +786,7 @@ def _im2col(prot: Pond,
 	return y_on_0, y_on_1, [out_height, out_width, int(batch), int(channels)]
 
 
-def (prot: Pond,: PondPublicTensor,
+def _maxpool2d_public(prot: Pond, x: PondPublicTensor,
 						pool_size: Tuple[int, int],
 						strides: Tuple[int, int],
 						padding: str) -> PondPublicTensor:
@@ -810,10 +814,10 @@ def _maxpool2d_private(prot: Pond,
 
 
 def _maxpool2d_masked(prot: Pond,
-											x: PondMaskedTensor,
-											pool_size: Tuple[int, int],
-											strides: Tuple[int, int],
-											padding: str) -> PondPrivateTensor:
+			x: PondMaskedTensor,
+			pool_size: Tuple[int, int],
+			strides: Tuple[int, int],
+			padding: str) -> PondPrivateTensor:
 	with tf.name_scope('maxpool2d'):
 		return prot.maxpool2d(x.unwrapped, pool_size, strides, padding)
 
