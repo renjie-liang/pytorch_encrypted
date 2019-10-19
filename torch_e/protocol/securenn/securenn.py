@@ -147,12 +147,13 @@ class SecureNN(Pond):
 		#with tf.name_scope('msb'):
 			# when the modulus is odd msb reduces to lsb via x -> 2*x
 		print('msb')
-		print(x.reveal().value_on_0.value)
+		# print(x.reveal().value_on_0.value)
 
 		x = self.cast_backing(x, self.odd_factory)
 
-		print(x.reveal().value_on_0.value)
-		input()
+		# print(x.reveal().value_on_0.value)
+		# print(x+x)
+		# input()
 		return self.lsb(x + x)
 
 	@memoize
@@ -324,14 +325,14 @@ class SecureNN(Pond):
 		# assert x.is_scaled == y.is_scaled
 		# assert not choice_bit.is_scaled
 
-		res = y - x
-		# print(res)
-		# print(choice_bit)
-		# print('choice_bit')
-		res = res * choice_bit
-		res = res + x
-		return res
-		# return (y - x) *choice_bit + x
+		# res = y - x
+		# # print(res)
+		# # print(choice_bit)
+		# # print('choice_bit')
+		# res = res * choice_bit
+		# res = res + x
+		
+		return (y - x) *choice_bit + x
 
 	@memoize
 	def equal_zero(self, x, dtype: Optional[AbstractFactory] = None):
@@ -457,8 +458,10 @@ class SecureNN(Pond):
 		indices_of_maximum = self.greater(x, y)
 		res = self.select(indices_of_maximum, y, x)
 
-		# print(x.reveal().value_on_0.value)
+		# print('maximum')
+		# # print(indices_of_maximum)
 		# print(y.reveal().value_on_0.value)
+		# print(x.reveal().value_on_0.value)
 		# print(indices_of_maximum.reveal().value_on_0.value)
 		# print(res.reveal().value_on_0.value)
 		# input()
@@ -601,17 +604,24 @@ def _lsb_private(prot, x: PondPrivateTensor):
 	"""
 
 	# TODO[Morten] in the refactor these could be type parameters
-	odd_dtype = x.backing_dtype
-	out_dtype = prot.tensor_factory
-	prime_dtype = prot.prime_factory
+	odd_dtype = x.backing_dtype # odd_factory
+	out_dtype = prot.tensor_factory # native_factory
+	prime_dtype = prot.prime_factory # native_factory
+
+	print("_lsb_private")
+	print(odd_dtype)
+	print(odd_dtype.native_type)	
+	print(out_dtype)
+	print(out_dtype.native_type)
+	print(prime_dtype)
+	print(prime_dtype.native_type)
+	input()
 
 	assert odd_dtype.modulus % 2 == 1
-
 	# needed for security because of `r` masking
 	assert x.backing_dtype.native_type == odd_dtype.native_type
 
 	# with tf.name_scope('lsb'):
-
 	# with tf.name_scope('blind'):
 
 	# ask server2 to generate r mask and its bits
@@ -890,7 +900,7 @@ def _cast_backing_private(prot, x: PondPrivateTensor, backing_dtype):
 
 	x0, x1 = x.unwrapped
 
-	print('_cast_backing_private')
+	# print('_cast_backing_private')
 
 	# with tf.name_scope("cast_backing"):
 
