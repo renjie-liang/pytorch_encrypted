@@ -142,10 +142,10 @@ class Pond(Protocol):
 		v = self._encode(value, apply_scaling)
 
 		x_on_0 = factory.constant(v)
-		x_on_0.to(self.server_0.device_name)
+		# x_on_0.to(self.server_0.device_name)
 
 		x_on_1 = factory.constant(v)
-		x_on_1.to(self.server_1.device_name)
+		# x_on_1.to(self.server_1.device_name)
 
 
 		return PondConstant(self, x_on_0, x_on_1, apply_scaling)
@@ -166,10 +166,10 @@ class Pond(Protocol):
 		v = self._encode(value, apply_scaling)
 
 		x_on_0 = factory.constant(v)
-		x_on_0.to(self.server_0.device_name)
+		# x_on_0.to(self.server_0.device_name)
 
 		x_on_1 = factory.constant(v)
-		x_on_1.to(self.server_1.device_name)
+		# x_on_1.to(self.server_1.device_name)
 
 
 		return PondPublicTensor(self, x_on_0, x_on_1, apply_scaling)
@@ -189,10 +189,10 @@ class Pond(Protocol):
 		v = self._encode(value, apply_scaling)
 
 		x_on_0 = factory.constant(v)
-		x_on_0.to(self.server_0.device_name)
+		# x_on_0.to(self.server_0.device_name)
 
 		x_on_1 = factory.constant(v)
-		x_on_1.to(self.server_1.device_name)
+		# x_on_1.to(self.server_1.device_name)
 
 
 		return PondPublicTensor(self, x_on_0, x_on_1, apply_scaling)
@@ -409,10 +409,10 @@ class Pond(Protocol):
 
 		# x0 = factory.tensor(v0)
 		x0 = v0
-		x0.to(self.server_0.device_name)
+		# x0.to(self.server_0.device_name)
 		# x1 = factory.tensor(v1)
 		x1 = v1
-		x1.to(self.server_1.device_name)
+		# x1.to(self.server_1.device_name)
 
 		x = PondPrivateTensor(self, x0, x1, apply_scaling)
 		# _initializers.append(x.initializer)
@@ -456,10 +456,10 @@ class Pond(Protocol):
 
 		# x0 = factory.tensor(v0)
 		x0 = v0
-		x0.to(self.server_0.device_name)
+		# x0.to(self.server_0.device_name)
 		# x1 = factory.tensor(v1)
 		x1 = v1
-		x1.to(self.server_1.device_name)
+		# x1.to(self.server_1.device_name)
 
 		x = PondPrivateTensor(self, x0, x1, apply_scaling)
 		# _initializers.append(x.initializer)
@@ -868,11 +868,10 @@ class Pond(Protocol):
 
 		return share0, share1
 
-# 	def _share_and_wrap(self,
-# 											secret: AbstractTensor,
-# 											is_scaled: bool) -> "PondPrivateTensor":
-# 		s0, s1 = self._share(secret)
-# 		return PondPrivateTensor(self, s0, s1, is_scaled)
+	def _share_and_wrap(self, secret: AbstractTensor,
+						is_scaled: bool) -> "PondPrivateTensor":
+		s0, s1 = self._share(secret)
+		return PondPrivateTensor(self, s0, s1, is_scaled)
 
 	def _reconstruct(self, share0, share1):
 		return share0 + share1
@@ -1000,16 +999,16 @@ class Pond(Protocol):
 # 	def sum(self, x, axis=None, keepdims=None):
 # 		return self.reduce_sum(x, axis, keepdims)
 
-# 	@memoize
-# 	def cumsum(self, x, axis=0, exclusive=False, reverse=False):
-# 		return self.dispatch(
-# 				"cumsum", x, axis=axis, exclusive=exclusive, reverse=reverse,
-# 		)
+	@memoize
+	def cumsum(self, x, axis=0, exclusive=False, reverse=False):
+		return self.dispatch(
+				"cumsum", x, axis=axis, exclusive=exclusive, reverse=reverse,
+		)
 
-# 	@memoize
-# 	def sub(self, x, y):
-# 		x, y = self.lift(x, y)
-# 		return self.dispatch("sub", x, y)
+	@memoize
+	def sub(self, x, y):
+		x, y = self.lift(x, y)
+		return self.dispatch("sub", x, y)
 
 	def mask(self, x):
 		"""Convert to a PondMaskedTensor."""
@@ -1078,62 +1077,62 @@ class Pond(Protocol):
 	def truncate(self, x: "PondTensor"):
 		return self.dispatch("truncate", x)
 
-# 	@memoize
-# 	def indexer(self, x: "PondTensor", slc) -> "PondTensor":
-# 		return self.dispatch("indexer", x, slc)
+	@memoize
+	def indexer(self, x: "PondTensor", slc) -> "PondTensor":
+		return self.dispatch("indexer", x, slc)
 
-# 	def transpose(self, x, perm=None) -> "PondTensor":
-# 		"""
-# 		transpose(x, perm=None) -> PondTensor
+	def transpose(self, x, perm=None) -> "PondTensor":
+		"""
+		transpose(x, perm=None) -> PondTensor
 
-# 		Transposes the input `x`, or permutes the axes of `x` if `perm` is given.
+		Transposes the input `x`, or permutes the axes of `x` if `perm` is given.
 
-# 		:param PondTensor x: The tensor to transpose or permute.
-# 		:param List perm: A permutation of axis indices.
-# 		"""
+		:param PondTensor x: The tensor to transpose or permute.
+		:param List perm: A permutation of axis indices.
+		"""
 
-# 		node_key = ("transpose", x)
-# 		x_t = nodes.get(node_key, None)
+		node_key = ("transpose", x)
+		x_t = nodes.get(node_key, None)
 
-# 		if x_t is not None:
-# 			return x_t
+		if x_t is not None:
+			return x_t
 
-# 		if isinstance(x, PondPublicTensor):
-# 			x_t = _transpose_public(self, x, perm=perm)
+		if isinstance(x, PondPublicTensor):
+			x_t = _transpose_public(self, x, perm=perm)
 
-# 		elif isinstance(x, PondPrivateTensor):
-# 			x_t = _transpose_private(self, x, perm=perm)
+		elif isinstance(x, PondPrivateTensor):
+			x_t = _transpose_private(self, x, perm=perm)
 
-# 		elif isinstance(x, PondMaskedTensor):
-# 			x_t = _transpose_masked(self, x, perm=perm)
+		elif isinstance(x, PondMaskedTensor):
+			x_t = _transpose_masked(self, x, perm=perm)
 
-# 		else:
-# 			raise TypeError("Don't know how to transpose {}".format(type(x)))
+		else:
+			raise TypeError("Don't know how to transpose {}".format(type(x)))
 
-# 		nodes[node_key] = x_t
-# 		return x_t
+		nodes[node_key] = x_t
+		return x_t
 
-# 	@memoize
-# 	def reshape(self, x: "PondTensor", shape: List[int]):
-# 		"""
-# 		reshape(x, shape) -> PondTensor
+	@memoize
+	def reshape(self, x: "PondTensor", shape: List[int]):
+		"""
+		reshape(x, shape) -> PondTensor
 
-# 		Reshape `x` into a tensor with a new `shape`.
+		Reshape `x` into a tensor with a new `shape`.
 
-# 		:param PondTensor x: Input tensor.
-# 		:param (int,...) shape: Shape of output tensor.
-# 		"""
+		:param PondTensor x: Input tensor.
+		:param (int,...) shape: Shape of output tensor.
+		"""
 
-# 		if isinstance(x, PondPublicTensor):
-# 			return _reshape_public(self, x, shape)
+		if isinstance(x, PondPublicTensor):
+			return _reshape_public(self, x, shape)
 
-# 		if isinstance(x, PondPrivateTensor):
-# 			return _reshape_private(self, x, shape)
+		if isinstance(x, PondPrivateTensor):
+			return _reshape_private(self, x, shape)
 
-# 		if isinstance(x, PondMaskedTensor):
-# 			return _reshape_masked(self, x, shape)
+		if isinstance(x, PondMaskedTensor):
+			return _reshape_masked(self, x, shape)
 
-# 		raise TypeError("Don't know how to reshape {}".format(type(x)))
+		raise TypeError("Don't know how to reshape {}".format(type(x)))
 
 # 	@memoize
 # 	def negative(self, x: "PondTensor"):
@@ -1146,35 +1145,35 @@ class Pond(Protocol):
 # 		"""
 # 		return self.dispatch("negative", x)
 
-# 	@memoize
-# 	def expand_dims(self, x: "PondTensor", axis=None):
-# 		"""See tf.expand_dims."""
+	@memoize
+	def expand_dims(self, x: "PondTensor", axis=None):
+		"""See tf.expand_dims."""
 
-# 		if isinstance(x, PondPublicTensor):
-# 			return _expand_dims_public(self, x, axis=axis)
+		if isinstance(x, PondPublicTensor):
+			return _expand_dims_public(self, x, axis=axis)
 
-# 		if isinstance(x, PondPrivateTensor):
-# 			return _expand_dims_private(self, x, axis=axis)
+		if isinstance(x, PondPrivateTensor):
+			return _expand_dims_private(self, x, axis=axis)
 
-# 		if isinstance(x, PondMaskedTensor):
-# 			return _expand_dims_masked(self, x, axis=axis)
+		if isinstance(x, PondMaskedTensor):
+			return _expand_dims_masked(self, x, axis=axis)
 
-# 		raise TypeError("Don't know how to expand dims {}".format(type(x)))
+		raise TypeError("Don't know how to expand dims {}".format(type(x)))
 
-# 	@memoize
-# 	def squeeze(self, x: "PondTensor", axis: Optional[List[int]] = None):
-# 		"""See tf.squeeze."""
+	@memoize
+	def squeeze(self, x: "PondTensor", axis: Optional[List[int]] = None):
+		"""See tf.squeeze."""
 
-# 		if isinstance(x, PondPublicTensor):
-# 			return _squeeze_public(self, x, axis)
+		if isinstance(x, PondPublicTensor):
+			return _squeeze_public(self, x, axis)
 
-# 		if isinstance(x, PondPrivateTensor):
-# 			return _squeeze_private(self, x, axis)
+		if isinstance(x, PondPrivateTensor):
+			return _squeeze_private(self, x, axis)
 
-# 		if isinstance(x, PondMaskedTensor):
-# 			return _squeeze_masked(self, x, axis)
+		if isinstance(x, PondMaskedTensor):
+			return _squeeze_masked(self, x, axis)
 
-# 		raise TypeError("Don't know how to squeeze {}".format(type(x)))
+		raise TypeError("Don't know how to squeeze {}".format(type(x)))
 
 # 	def strided_slice(self, x: "PondTensor", *args: Any, **kwargs: Any):
 # 		"""
@@ -1210,12 +1209,11 @@ class Pond(Protocol):
 # 	def gather(self, x: "PondTensor", indices: list, axis=0) -> "PondTensor":
 # 		return self.dispatch("gather", x, indices, axis=axis)
 
-# 	@memoize
-# 	def split(self,
-# 						x: "PondTensor",
-# 						num_split: Union[int, list],
-# 						axis=0) -> List["PondTensor"]:
-# 		return self.dispatch("split", x, num_split, axis=axis)
+	@memoize
+	def split(self, x: "PondTensor",
+				num_split: Union[int, list],
+				axis=0) -> List["PondTensor"]:
+		return self.dispatch("split", x, num_split, axis=axis)
 
 # 	def stack(self, xs: List["PondTensor"], axis=0):
 # 		"""See tf.stack."""
@@ -1499,7 +1497,7 @@ class Pond(Protocol):
 		func_name = "_{}_{}".format(base_name, suffix)
 
 		# print(suffix)
-		# print(func_name)
+		print(func_name)
 		# input()
 		if container is None:
 			container = _THISMODULE
@@ -1732,16 +1730,16 @@ class PondTensor(abc.ABC):
 	def __radd__(self, other):
 		return other.prot.add(other, self)
 
-# 	def reduce_sum(self, axis=None, keepdims=None):
-# 		"""
-# 		Like :meth:`tensorflow.reduce_sum`
+	def reduce_sum(self, axis=None, keepdims=None):
+		"""
+		Like :meth:`tensorflow.reduce_sum`
 
-# 		:param int axis:	The axis to reduce along
-# 		:param bool keepdims: If true, retains reduced dimensions with length 1.
-# 		:return: A new PondTensor
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.reduce_sum(self, axis, keepdims)
+		:param int axis:	The axis to reduce along
+		:param bool keepdims: If true, retains reduced dimensions with length 1.
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.reduce_sum(self, axis, keepdims)
 
 # 	def sum(self, axis=None, keepdims=None):
 # 		"""
@@ -1749,21 +1747,21 @@ class PondTensor(abc.ABC):
 # 		"""
 # 		return self.reduce_sum(axis, keepdims)
 
-# 	def sub(self, other):
-# 		"""
-# 		Subtract `other` from this tensor.
+	def sub(self, other):
+		"""
+		Subtract `other` from this tensor.
 
-# 		:param PondTensor other: to subtract
-# 		:return: A new PondTensor
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.sub(self, other)
+		:param PondTensor other: to subtract
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.sub(self, other)
 
-# 	def __sub__(self, other):
-# 		return self.prot.sub(self, other)
+	def __sub__(self, other):
+		return self.prot.sub(self, other)
 
-# 	def __rsub__(self, other):
-# 		return self.prot.sub(other, self)
+	def __rsub__(self, other):
+		return self.prot.sub(other, self)
 
 	def mul(self, other):
 		"""
@@ -1829,21 +1827,21 @@ class PondTensor(abc.ABC):
 # 		"""
 # 		return self.matmul(other)
 
-# 	def __getitem__(self, slc):
-# 		return self.prot.indexer(self, slc)
+	def __getitem__(self, slc):
+		return self.prot.indexer(self, slc)
 
-# 	def transpose(self, perm=None):
-# 		"""
-# 		Transpose this tensor.
+	def transpose(self, perm=None):
+		"""
+		Transpose this tensor.
 
-# 		See :meth:`tensorflow.transpose`
+		See :meth:`tensorflow.transpose`
 
-# 		:param List[int]: A permutation of the dimensions of this tensor.
+		:param List[int]: A permutation of the dimensions of this tensor.
 
-# 		:return: A new PondTensor
-# 		:rtype: PondTensor
-# 		"""
-# 		return self.prot.transpose(self, perm)
+		:return: A new PondTensor
+		:rtype: PondTensor
+		"""
+		return self.prot.transpose(self, perm)
 
 # 	def truncate(self):
 # 		"""
@@ -1865,16 +1863,16 @@ class PondTensor(abc.ABC):
 # 		"""
 # 		return self.prot.expand_dims(self, axis=axis)
 
-# 	def reshape(self, shape: List[int]) -> "PondTensor":
-# 		"""
-# 		:See: tf.reshape
+	def reshape(self, shape: List[int]) -> "PondTensor":
+		"""
+		:See: tf.reshape
 
-# 		:param List[int] shape: The new shape of the tensor.
-# 		:rtype: PondTensor
-# 		:returns: A new tensor with the contents of this tensor, but with the new
-# 				specified shape.
-# 		"""
-# 		return self.prot.reshape(self, shape)
+		:param List[int] shape: The new shape of the tensor.
+		:rtype: PondTensor
+		:returns: A new tensor with the contents of this tensor, but with the new
+				specified shape.
+		"""
+		return self.prot.reshape(self, shape)
 
 # 	def negative(self) -> "PondTensor":
 # 		"""
@@ -1885,15 +1883,15 @@ class PondTensor(abc.ABC):
 # 		"""
 # 		return self.prot.negative(self)
 
-# 	def reduce_max(self, axis: int) -> "PondTensor":
-# 		"""
-# 		:See: tf.reduce_max
+	def reduce_max(self, axis: int) -> "PondTensor":
+		"""
+		:See: tf.reduce_max
 
-# 		:param int axis: The axis to take the max along
-# 		:rtype: PondTensor
-# 		:returns: A new pond tensor with the max value from each axis.
-# 		"""
-# 		return self.prot.reduce_max(self, axis)
+		:param int axis: The axis to take the max along
+		:rtype: PondTensor
+		:returns: A new pond tensor with the max value from each axis.
+		"""
+		return self.prot.reduce_max(self, axis)
 
 
 class PondPublicTensor(PondTensor):
@@ -2638,9 +2636,9 @@ def _reveal_private(prot, x):
 	assert isinstance(x, PondPrivateTensor), type(x)
 	x0, x1 = x.unwrapped
 	z_on_0 = x0 + x1
-	z_on_0.to(prot.server_0.device_name)
+	# z_on_0.to(prot.server_0.device_name)
 	z_on_1 = x0 + x1
-	z_on_1.to(prot.server_1.device_name)
+	# z_on_1.to(prot.server_1.device_name)
 
 	return PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled)
 
@@ -2655,24 +2653,23 @@ def _reveal_private(prot, x):
 # #
 
 
-# def _add_public_public(prot, x, y):
-# 	assert isinstance(x, PondPublicTensor), type(x)
-# 	assert isinstance(y, PondPublicTensor), type(y)
-# 	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
-# 																			"{} {}").format(x.is_scaled, y.is_scaled)
+def _add_public_public(prot, x, y):
+	assert isinstance(x, PondPublicTensor), type(x)
+	assert isinstance(y, PondPublicTensor), type(y)
+	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
+																			"{} {}").format(x.is_scaled, y.is_scaled)
 
-# 	x_on_0, x_on_1 = x.unwrapped
-# 	y_on_0, y_on_1 = y.unwrapped
+	x_on_0, x_on_1 = x.unwrapped
+	y_on_0, y_on_1 = y.unwrapped
 
-# 	with tf.name_scope("add"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z_on_0 = x_on_0 + y_on_0
+	# with tf.device(prot.server_0.device_name):
+	z_on_0 = x_on_0 + y_on_0
 
-# 		with tf.device(prot.server_1.device_name):
-# 			z_on_1 = x_on_1 + y_on_1
+	# with tf.device(prot.server_1.device_name):
+	z_on_1 = x_on_1 + y_on_1
 
-# 	return PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled)
+	return PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled)
 
 
 # def _add_public_private(prot, x, y):
@@ -2731,9 +2728,9 @@ def _add_private_private(prot, x, y):
 	y0, y1 = y.unwrapped
 
 	z0 = x0 + y0
-	z0.to(prot.server_0.device_name)
+	# z0.to(prot.server_0.device_name)
 	z1 = x1 + y1
-	z1.to(prot.server_1.device_name)
+	# z1.to(prot.server_1.device_name)
 
 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
@@ -2842,25 +2839,25 @@ def _add_private_private(prot, x, y):
 # 	return PondPublicTensor(prot, y_on_0, y_on_1, x.is_scaled)
 
 
-# def _cumsum_private(
-# 		prot: Pond,
-# 		x: PondPrivateTensor,
-# 		axis: Optional[int] = None,
-# 		exclusive: Optional[bool] = None,
-# 		reverse: Optional[bool] = None,
-# ) -> PondPrivateTensor:
+def _cumsum_private(
+		prot: Pond,
+		x: PondPrivateTensor,
+		axis: Optional[int] = None,
+		exclusive: Optional[bool] = None,
+		reverse: Optional[bool] = None,
+) -> PondPrivateTensor:
 
-# 	x0, x1 = x.unwrapped
+	x0, x1 = x.unwrapped
 
-# 	with tf.name_scope("cumsum"):
+	# with tf.name_scope("cumsum"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			y0 = x0.cumsum(axis=axis, exclusive=exclusive, reverse=reverse)
+	# 	with tf.device(prot.server_0.device_name):
+	y0 = x0.cumsum(axis=axis, exclusive=exclusive, reverse=reverse)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			y1 = x1.cumsum(axis=axis, exclusive=exclusive, reverse=reverse)
+		# with tf.device(prot.server_1.device_name):
+	y1 = x1.cumsum(axis=axis, exclusive=exclusive, reverse=reverse)
 
-# 	return PondPrivateTensor(prot, y0, y1, x.is_scaled)
+	return PondPrivateTensor(prot, y0, y1, x.is_scaled)
 
 
 # def _cumsum_masked(
@@ -2880,44 +2877,43 @@ def _add_private_private(prot, x, y):
 # #
 
 
-# def _sub_public_public(prot, x, y):
-# 	assert isinstance(x, PondPublicTensor), type(x)
-# 	assert isinstance(y, PondPublicTensor), type(y)
-# 	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
-# 																			"{} {}").format(x.is_scaled, y.is_scaled)
+def _sub_public_public(prot, x, y):
+	assert isinstance(x, PondPublicTensor), type(x)
+	assert isinstance(y, PondPublicTensor), type(y)
+	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
+																			"{} {}").format(x.is_scaled, y.is_scaled)
 
-# 	x_on_0, x_on_1 = x.unwrapped
-# 	y_on_0, y_on_1 = y.unwrapped
-
-# 	with tf.name_scope("sub"):
-
-# 		with tf.device(prot.server_0.device_name):
-# 			z_on_0 = x_on_0 - y_on_0
-
-# 		with tf.device(prot.server_1.device_name):
-# 			z_on_1 = x_on_1 - y_on_1
-
-# 	return PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled)
+	x_on_0, x_on_1 = x.unwrapped
+	y_on_0, y_on_1 = y.unwrapped
 
 
-# def _sub_public_private(prot, x, y):
-# 	assert isinstance(x, PondPublicTensor), type(x)
-# 	assert isinstance(y, PondPrivateTensor), type(y)
-# 	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
-# 																			"{} {}").format(x.is_scaled, y.is_scaled)
+		# with tf.device(prot.server_0.device_name):
+	z_on_0 = x_on_0 - y_on_0
 
-# 	x_on_0, _ = x.unwrapped
-# 	y0, y1 = y.unwrapped
+		# with tf.device(prot.server_1.device_name):
+	z_on_1 = x_on_1 - y_on_1
 
-# 	with tf.name_scope("sub"):
+	return PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled)
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z0 = x_on_0 - y0
 
-# 		with tf.device(prot.server_1.device_name):
-# 			z1 = y1.negative()
+def _sub_public_private(prot, x, y):
+	assert isinstance(x, PondPublicTensor), type(x)
+	assert isinstance(y, PondPrivateTensor), type(y)
+	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
+																			"{} {}").format(x.is_scaled, y.is_scaled)
 
-# 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
+	x_on_0, _ = x.unwrapped
+	y0, y1 = y.unwrapped
+
+	# with tf.name_scope("sub"):
+
+	# 	with tf.device(prot.server_0.device_name):
+	z0 = x_on_0 - y0
+
+	# with tf.device(prot.server_1.device_name):
+	z1 = y1.negative()
+
+	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
 # def _sub_public_masked(prot, x, y):
@@ -2946,24 +2942,24 @@ def _add_private_private(prot, x, y):
 # 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
-# def _sub_private_private(prot, x, y):
-# 	assert isinstance(x, PondPrivateTensor), type(x)
-# 	assert isinstance(y, PondPrivateTensor), type(y)
-# 	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
-# 																			"{} {}").format(x.is_scaled, y.is_scaled)
+def _sub_private_private(prot, x, y):
+	assert isinstance(x, PondPrivateTensor), type(x)
+	assert isinstance(y, PondPrivateTensor), type(y)
+	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
+				"{} {}").format(x.is_scaled, y.is_scaled)
 
-# 	x0, x1 = x.unwrapped
-# 	y0, y1 = y.unwrapped
+	x0, x1 = x.unwrapped
+	y0, y1 = y.unwrapped
 
-# 	with tf.name_scope("sub"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z0 = x0 - y0
 
-# 		with tf.device(prot.server_1.device_name):
-# 			z1 = x1 - y1
+	#with tf.device(prot.server_0.device_name):
+	z0 = x0 - y0
 
-# 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
+	#with tf.device(prot.server_1.device_name):
+	z1 = x1 - y1
+
+	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
 # def _sub_private_masked(prot, x, y):
@@ -2995,24 +2991,23 @@ def _add_private_private(prot, x, y):
 # #
 
 
-# def _mul_public_public(prot, x, y):
-# 	assert isinstance(x, PondPublicTensor), type(x)
-# 	assert isinstance(y, PondPublicTensor), type(y)
+def _mul_public_public(prot, x, y):
+	assert isinstance(x, PondPublicTensor), type(x)
+	assert isinstance(y, PondPublicTensor), type(y)
 
-# 	x_on_0, x_on_1 = x.unwrapped
-# 	y_on_0, y_on_1 = y.unwrapped
+	x_on_0, x_on_1 = x.unwrapped
+	y_on_0, y_on_1 = y.unwrapped
 
-# 	with tf.name_scope("mul"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z_on_0 = x_on_0 * y_on_0
+	# with tf.device(prot.server_0.device_name):
+	z_on_0 = x_on_0 * y_on_0
 
-# 		with tf.device(prot.server_1.device_name):
-# 			z_on_1 = x_on_1 * y_on_1
+	# with tf.device(prot.server_1.device_name):
+	z_on_1 = x_on_1 * y_on_1
 
-# 		z = PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled or y.is_scaled)
-# 		z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
-# 		return z
+	z = PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled or y.is_scaled)
+	z = prot.truncate(z) if x.is_scaled and y.is_scaled else z
+	return z
 
 
 # def _mul_public_private(prot, x, y):
@@ -3639,19 +3634,19 @@ def _avgpool2d_masked(
 # #
 
 
-# def _indexer_public(prot: Pond,
-# 										tensor: PondPublicTensor,
-# 										slc) -> "PondPublicTensor":
+def _indexer_public(prot: Pond,
+					tensor: PondPublicTensor,
+					slc) -> "PondPublicTensor":
 
-# 	with tf.name_scope("index"):
+	# with tf.name_scope("index"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			v_on_0 = tensor.value_on_0[slc]
+	# with tf.device(prot.server_0.device_name):
+	v_on_0 = tensor.value_on_0[slc]
 
-# 		with tf.device(prot.server_1.device_name):
-# 			v_on_1 = tensor.value_on_1[slc]
+	# with tf.device(prot.server_1.device_name):
+	v_on_1 = tensor.value_on_1[slc]
 
-# 		return PondPublicTensor(prot, v_on_0, v_on_1, tensor.is_scaled)
+	return PondPublicTensor(prot, v_on_0, v_on_1, tensor.is_scaled)
 
 
 # def _indexer_private(prot: Pond,
@@ -3719,20 +3714,20 @@ def _avgpool2d_masked(
 # 		return PondPublicTensor(prot, x_on_0_t, x_on_1_t, x.is_scaled)
 
 
-# def _transpose_private(prot, x, perm=None):
-# 	assert isinstance(x, PondPrivateTensor)
+def _transpose_private(prot, x, perm=None):
+	assert isinstance(x, PondPrivateTensor)
 
-# 	x0, x1 = x.unwrapped
+	x0, x1 = x.unwrapped
 
-# 	with tf.name_scope("transpose"):
+	# with tf.name_scope("transpose"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			x0_t = x0.transpose(perm=perm)
+		# with tf.device(prot.server_0.device_name):
+	x0_t = x0.transpose(perm=perm)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			x1_t = x1.transpose(perm=perm)
+		# with tf.device(prot.server_1.device_name):
+	x1_t = x1.transpose(perm=perm)
 
-# 		return PondPrivateTensor(prot, x0_t, x1_t, x.is_scaled)
+	return PondPrivateTensor(prot, x0_t, x1_t, x.is_scaled)
 
 
 # def _transpose_masked(prot, x, perm=None):
@@ -3925,22 +3920,23 @@ def _avgpool2d_masked(
 # 		]
 
 
-# def _split_private(
-# 		prot: Pond, x: PondPrivateTensor, num_split: Union[int, list], axis: int = 0
-# ) -> List[PondPrivateTensor]:
+def _split_private(
+		prot: Pond, x: PondPrivateTensor, num_split: Union[int, list], axis: int = 0
+) -> List[PondPrivateTensor]:
 
-# 	x0, x1 = x.unwrapped
+	x0, x1 = x.unwrapped
 
-# 	with tf.name_scope("split"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			ys0 = x0.split(num_split, axis=axis)
+	#with tf.device(prot.server_0.device_name):
+	total = x0.shape
+	total = total[axis]
+	num_per = total // num_split
+	ys0 = x0.split(num_per, axis=axis)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			ys1 = x1.split(num_split, axis=axis)
-
-# 		return [PondPrivateTensor(prot, y0, y1, x.is_scaled)
-# 						for y0, y1 in zip(ys0, ys1)]
+	#with tf.device(prot.server_1.device_name):
+	ys1 = x1.split(num_per, axis=axis)
+	return [PondPrivateTensor(prot, y0, y1, x.is_scaled)
+					for y0, y1 in zip(ys0, ys1)]
 
 
 # def _split_masked(prot: Pond,
@@ -4140,16 +4136,16 @@ def _mask_private(prot: Pond, x: PondPrivateTensor) -> PondMaskedTensor:
 	a, a0, a1 = prot.triple_source.mask(x.backing_dtype, x.shape)
 
 	alpha0 = x0 - a0
-	alpha0.to(prot.server_0.device_name)
+	# alpha0.to(prot.server_0.device_name)
 
 	alpha1 = x1 - a1
-	alpha1.to(prot.server_1.device_name)
+	# alpha1.to(prot.server_1.device_name)
 
 	alpha_on_0 = alpha0 + alpha1
-	alpha_on_0.to(prot.server_0.device_name)
+	# alpha_on_0.to(prot.server_0.device_name)
 
 	alpha_on_1 = alpha0 + alpha1
-	alpha_on_1.to(prot.server_1.device_name)
+	# alpha_on_1.to(prot.server_1.device_name)
 
 
 	return PondMaskedTensor( prot, x, a, a0, a1, alpha_on_0, alpha_on_1, x.is_scaled,)
@@ -4180,22 +4176,22 @@ def _mask_private(prot: Pond, x: PondPrivateTensor) -> PondMaskedTensor:
 # 		)
 
 
-# def _reshape_private(
-# 		prot: Pond, x: PondPrivateTensor, shape: List[int]
-# ) -> PondPrivateTensor:
-# 	assert isinstance(x, PondPrivateTensor)
+def _reshape_private(
+			prot: Pond, 
+			x: PondPrivateTensor, 
+			shape: List[int]) -> PondPrivateTensor:
+	assert isinstance(x, PondPrivateTensor)
 
-# 	x0, x1 = x.unwrapped
+	x0, x1 = x.unwrapped
 
-# 	with tf.name_scope("reshape"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			x0_reshaped = x0.reshape(shape)
+	#with tf.device(prot.server_0.device_name):
+	x0_reshaped = x0.reshape(shape)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			x1_reshaped = x1.reshape(shape)
+	#with tf.device(prot.server_1.device_name):
+	x1_reshaped = x1.reshape(shape)
 
-# 		return PondPrivateTensor(prot, x0_reshaped, x1_reshaped, x.is_scaled)
+	return PondPrivateTensor(prot, x0_reshaped, x1_reshaped, x.is_scaled)
 
 
 # def _reshape_masked(
@@ -4300,22 +4296,22 @@ def _mask_private(prot: Pond, x: PondPrivateTensor) -> PondMaskedTensor:
 # #
 
 
-# def _expand_dims_public(
-# 		prot: Pond, x: PondPublicTensor, axis: Optional[int] = None
-# ) -> PondPublicTensor:
-# 	assert isinstance(x, PondPublicTensor)
+def _expand_dims_public(
+		prot: Pond, x: PondPublicTensor, axis: Optional[int] = None
+) -> PondPublicTensor:
+	assert isinstance(x, PondPublicTensor)
 
-# 	x_on_0, x_on_1 = x.unwrapped
+	x_on_0, x_on_1 = x.unwrapped
 
-# 	with tf.name_scope("expand"):
+	# with tf.name_scope("expand"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			x_on_0_e = x_on_0.expand_dims(axis=axis)
+	# with tf.device(prot.server_0.device_name):
+	x_on_0_e = x_on_0.expand_dims(axis=axis)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			x_on_1_e = x_on_1.expand_dims(axis=axis)
+	# with tf.device(prot.server_1.device_name):
+	x_on_1_e = x_on_1.expand_dims(axis=axis)
 
-# 		return PondPublicTensor(prot, x_on_0_e, x_on_1_e, x.is_scaled)
+	return PondPublicTensor(prot, x_on_0_e, x_on_1_e, x.is_scaled)
 
 
 # def _expand_dims_private(
@@ -4391,22 +4387,22 @@ def _mask_private(prot: Pond, x: PondPrivateTensor) -> PondMaskedTensor:
 # 		)
 
 
-# def _squeeze_private(
-# 		prot: Pond, x: PondPrivateTensor, axis: Optional[int] = None
-# ) -> PondPrivateTensor:
-# 	assert isinstance(x, PondPrivateTensor)
+def _squeeze_private(prot: Pond, 
+			x: PondPrivateTensor, 
+			axis: Optional[int] = None) -> PondPrivateTensor:
+	assert isinstance(x, PondPrivateTensor)
 
-# 	x0, x1 = x.unwrapped
+	x0, x1 = x.unwrapped
 
-# 	with tf.name_scope("squeeze"):
+	axis = axis[0]
 
-# 		with tf.device(prot.server_0.device_name):
-# 			x0_squeezed = x0.squeeze(axis)
+	#with tf.device(prot.server_0.device_name):
+	x0_squeezed = x0.squeeze(axis)
 
-# 		with tf.device(prot.server_1.device_name):
-# 			x1_squeezed = x1.squeeze(axis)
+	#with tf.device(prot.server_1.device_name):
+	x1_squeezed = x1.squeeze(axis)
 
-# 		return PondPrivateTensor(prot, x0_squeezed, x1_squeezed, x.is_scaled)
+	return PondPrivateTensor(prot, x0_squeezed, x1_squeezed, x.is_scaled)
 
 
 # def _squeeze_masked(
@@ -4453,9 +4449,9 @@ def _equal_public_public(
 	y_on_0, y_on_1 = y.unwrapped
 
 	z_on_0 = x_on_0.equal(y_on_0)
-	z_on_0.to(prot.server_0.device_name)
+	# z_on_0.to(prot.server_0.device_name)
 	z_on_1 = x_on_1.equal(y_on_1)
-	z_on_1.to(prot.server_1.device_name)
+	# z_on_1.to(prot.server_1.device_name)
 
 	return PondPublicTensor(prot, z_on_0, z_on_1, False)
 

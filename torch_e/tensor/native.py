@@ -14,7 +14,7 @@ import tensorflow as tf
 from .factory import (AbstractFactory, AbstractTensor, AbstractVariable,
 											AbstractConstant, AbstractPlaceholder)
 # from .helpers import inverse
-# from .shared import binarize, conv2d, im2col
+from .shared import binarize, im2col ,conv2d
 from .shared import im2col
 # from ..operations import secure_random
 
@@ -134,8 +134,8 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			value = sampler(low=0 , high = maxval, size = shape, dtype=NATIVE_TYPE)
 			return DenseTensor(value)
 
-		# def sample_bits(self, shape):
-		# 	return self.sample_bounded(shape, bitlength=1)
+		def sample_bits(self, shape):
+			return self.sample_bounded(shape, bitlength=1)
 
 		# def stack(self, xs: list, axis: int = 0):
 		# 	assert all(isinstance(x, Tensor) for x in xs)
@@ -190,12 +190,13 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		def to_native(self) -> torch.Tensor:
 			return self.value
 
-		# def bits(self, factory=None) -> AbstractTensor:
-		# 	factory = factory or FACTORY
-		# 	if EXPLICIT_MODULUS is None:
-		# 		return factory.tensor(binarize(self.value))
-		# 	bitsize = bitsize = math.ceil(math.log2(EXPLICIT_MODULUS))
-		# 	return factory.tensor(binarize(self.value % EXPLICIT_MODULUS, bitsize))
+		def bits(self, factory=None) -> AbstractTensor:
+			factory = factory or FACTORY
+			if EXPLICIT_MODULUS is None:
+				return factory.tensor(binarize(self.value))
+
+			bitsize = bitsize = math.ceil(math.log2(EXPLICIT_MODULUS))
+			return factory.tensor(binarize(self.value % EXPLICIT_MODULUS, bitsize))
 
 		def __repr__(self) -> str:
 			return '{}(shape={})'.format(type(self), self.shape)
@@ -294,8 +295,14 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 				value %= EXPLICIT_MODULUS
 			return DenseTensor(value)
 
-		# def transpose(self, perm):
-		# 	return DenseTensor(tf.transpose(self.value, perm))
+		def transpose(self, perm):
+			res = self.value.permute(*perm)
+			return DenseTensor(res)
+
+		def permute(self, perm):
+			res = self.value.permute(*perm)
+			return DenseTensor(res)
+
 
 		# def strided_slice(self, args, kwargs):
 		# 	return DenseTensor(tf.strided_slice(self.value, *args, **kwargs))
@@ -303,19 +310,21 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		# def gather(self, indices: list, axis: int = 0):
 		# 	return DenseTensor(tf.gather(self.value, indices, axis=axis))
 
-		# def split(self, num_split: Union[int, list], axis: int = 0):
-		# 	values = tf.split(self.value, num_split, axis=axis)
-		# 	return [DenseTensor(value) for value in values]
+		def split(self, num_split: Union[int, list], axis: int = 0):
+			values = torch.split(self.value, num_split, dim=axis)
+			return [DenseTensor(value) for value in values]
 
 		def reshape(self, axes: Union[tf.Tensor, List[int]]):
+
 			res = self.value.reshape(axes)
+
 			return DenseTensor(res)
 
-		# def negative(self):
-		# 	value = tf.negative(self.value)
-		# 	if EXPLICIT_MODULUS is not None:
-		# 		value %= EXPLICIT_MODULUS
-		# 	return DenseTensor(value)
+		def negative(self):
+			value = self.value * -1
+			if EXPLICIT_MODULUS is not None:
+				value %= EXPLICIT_MODULUS
+			return DenseTensor(value)
 		def sum(self,axis = None):
 			value = torch.sum(self.value,dim = axis)
 			return DenseTensor(value)
@@ -326,19 +335,18 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 				value %= EXPLICIT_MODULUS
 			return DenseTensor(value)
 
-		# def cumsum(self, axis, exclusive, reverse):
-		# 	value = tf.cumsum(self.value,
-		# 										axis=axis,
-		# 										exclusive=exclusive,
-		# 										reverse=reverse)
-		# 	if EXPLICIT_MODULUS is not None:
-		# 		value %= EXPLICIT_MODULUS
-		# 	return DenseTensor(value)
+		def cumsum(self, axis, exclusive, reverse):
+			# value = tf.cumsum(self.value, axis=axis, exclusive=exclusive,reverse=reverse)
+			value = torch.cumsum(self.value, dim=axis, out=None, dtype=None)
+			if EXPLICIT_MODULUS is not None:
+				value %= EXPLICIT_MODULUS
+			return DenseTensor(value)
 
-		# def equal_zero(self, factory=None):
-		# 	factory = factory or FACTORY
-		# 	return factory.tensor(tf.cast(tf.equal(self.value, 0),
-		# 																dtype=factory.native_type))
+		def equal_zero(self, factory=None):
+			factory = factory or FACTORY
+			res = (self.value == 0)
+			res.to(factory.native_type)
+			return factory.tensor(res)
 
 		def equal(self, other, factory=None):
 			x, y = _lift(self, other)
@@ -361,14 +369,15 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 
 			return DenseTensor(x)
 
-		# def expand_dims(self, axis: Optional[int] = None):
-		# 	return DenseTensor(tf.expand_dims(self.value, axis))
+		def expand_dims(self, axis: Optional[int] = None):
+			res = self.value.unsqueeze(axis)
+			return DenseTensor(res)
 
-		# def squeeze(self, axis: Optional[List[int]] = None):
-		# 	return DenseTensor(tf.squeeze(self.value, axis=axis))
+		def squeeze(self, axis: Optional[List[int]] = None):
+			return DenseTensor(torch.squeeze(self.value, dim=axis))
 
-		# def cast(self, factory):
-		# 	return factory.tensor(self.value)
+		def cast(self, factory):
+			return factory.tensor(self.value)
 
 	class DenseTensor(Tensor):
 		"""Public native Tensor class."""

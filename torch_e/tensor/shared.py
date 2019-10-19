@@ -7,36 +7,49 @@ import numpy as np
 
 from .factory import AbstractTensor
 import tensorflow as tf
-
-def binarize(tensor: tf.Tensor,
+def binarize(tensor: torch.Tensor,
 						 bitsize: Optional[int] = None) -> tf.Tensor:
 	"""Extract bits of values in `tensor`, returning a `tf.Tensor` with same
 	dtype."""
 
-	with tf.name_scope('binarize'):
-		bitsize = bitsize or (tensor.dtype.size * 8)
+	#with tf.name_scope('binarize'):
+	if bitsize is None:
+		if tensor.dtype == torch.int64:
+			bitsize =  64
+		elif tensor.dtype == torch.int32:
+			bitsize =  32
+	np_x = tensor.numpy()
 
-		bit_indices_shape = [1] * len(tensor.shape) + [bitsize]
-		bit_indices = tf.range(bitsize, dtype=tensor.dtype)
-		bit_indices = tf.reshape(bit_indices, bit_indices_shape)
+	bitsize = bitsize or (tensor.dtype.size * 8)
 
-		val = tf.expand_dims(tensor, -1)
-		val = tf.bitwise.bitwise_and(tf.bitwise.right_shift(val, bit_indices), 1)
+	bit_indices_shape = [1] * len(tensor.shape) + [bitsize]
 
-		assert val.dtype == tensor.dtype
-		return val
+	bit_indices = torch.arange(start = 0, end = bitsize, dtype=tensor.dtype)
+	bit_indices = torch.reshape(bit_indices, bit_indices_shape)
+	bit_indices_np = bit_indices.numpy()
+
+	val_np = np.expand_dims(np_x, -1)
+	val_np = np.bitwise_and(np.right_shift(val_np, bit_indices_np), 1)
+
+	res = torch.from_numpy(val_np)
+	assert res.dtype == tensor.dtype
+	return res
 
 
-def bits(tensor: tf.Tensor, bitsize: Optional[int] = None) -> list:
+def bits(tensor: torch.Tensor, bitsize: Optional[int] = None) -> list:
 	"""Extract bits of values in `tensor`, returning a list of tensors."""
 
-	with tf.name_scope('bits'):
-		bitsize = bitsize or (tensor.dtype.size * 8)
-		the_bits = [
-				tf.bitwise.bitwise_and(tf.bitwise.right_shift(tensor, i), 1)
-				for i in range(bitsize)
-		]
-		return the_bits
+	if bitsize is None:
+		if tensor.dtype == torch.int64:
+			bitsize =  64
+		elif tensor.dtype == torch.int32:
+			bitsize =  32
+	np_x = tensor.numpy()
+
+	the_bits = [np.bitwise_and(np.right_shift(np_x, i), 1) 
+				 for i in range(bitsize)]
+	res = torch.from_numpy(the_bits)
+	return res
 		# return tf.stack(bits, axis=-1)
 
 
@@ -72,16 +85,18 @@ def im2col(x: Union[torch.Tensor, np.ndarray],
 
 	# change back to NCHW
 	patch_tensor_nchw = tf.reshape(tf.transpose(patch_tensor, [3, 1, 2, 0]),
-																 (h_filter, w_filter, channels, -1))
+		(h_filter, w_filter, channels, -1))
 
 	# reshape to x_col
 	x_col_tensor = tf.reshape(tf.transpose(patch_tensor_nchw, [2, 0, 1, 3]),
 												(channels * h_filter * w_filter, -1))
-	with tf.Session() as sess:
+	with tf.compat.v1.Session() as sess:
 		res = sess.run(x_col_tensor)
 
 	temp_torch = torch.tensor(res, dtype = torch.int64)
-	print(temp_torch)
+	# print('im2col')
+	# print(temp_torch.size())
+	# input()
 	return  temp_torch
 
 def conv2d(x: AbstractTensor,

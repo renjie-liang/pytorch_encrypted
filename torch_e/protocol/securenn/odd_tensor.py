@@ -10,7 +10,7 @@ import torch
 import numpy as np
 
 from ...tensor.factory import AbstractTensor
-# from ...tensor.shared import binarize
+from ...tensor.shared import binarize
 # from ...operations import secure_random
 
 def odd_factory(NATIVE_TYPE):	# pylint: disable=invalid-name

@@ -247,7 +247,7 @@ set_protocol(prot)
 ## test MaxPooling2D 
 ## debug  Only SecureNN supports Max Pooling
 from torch_e.layers.pooling import MaxPooling2D
-batch_size, in_channels, h_in, w_in = 1, 1, 4, 4
+batch_size, in_channels, h_in, w_in = 1, 1, 8, 8
 input_shape = [batch_size, in_channels, h_in, w_in]
 x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
 
@@ -259,3 +259,9 @@ D = MaxPooling2D(input_shape = input_shape,
 # print(D.get_output_shape())
 private_x = prot.private_tensor(x)
 pool_private_x = D.forward(private_x)
+
+temp = pool_private_x.reveal()
+print(temp.value_on_0.value)
+
+temp = private_x.reveal()
+print(temp.value_on_0.value)
