@@ -146,7 +146,13 @@ class SecureNN(Pond):
 		"""
 		#with tf.name_scope('msb'):
 			# when the modulus is odd msb reduces to lsb via x -> 2*x
+		print('msb')
+		print(x.reveal().value_on_0.value)
+
 		x = self.cast_backing(x, self.odd_factory)
+
+		print(x.reveal().value_on_0.value)
+		input()
 		return self.lsb(x + x)
 
 	@memoize
@@ -319,9 +325,9 @@ class SecureNN(Pond):
 		# assert not choice_bit.is_scaled
 
 		res = y - x
-		print(res)
-		print(choice_bit)
-		print('choice_bit')
+		# print(res)
+		# print(choice_bit)
+		# print('choice_bit')
 		res = res * choice_bit
 		res = res + x
 		return res
@@ -449,7 +455,14 @@ class SecureNN(Pond):
 		"""
 		#with tf.name_scope('maximum'):
 		indices_of_maximum = self.greater(x, y)
-		return self.select(indices_of_maximum, y, x)
+		res = self.select(indices_of_maximum, y, x)
+
+		# print(x.reveal().value_on_0.value)
+		# print(y.reveal().value_on_0.value)
+		# print(indices_of_maximum.reveal().value_on_0.value)
+		# print(res.reveal().value_on_0.value)
+		# input()
+		return res
 
 	@memoize
 	def reduce_max(self, x, axis=0):
@@ -609,9 +622,6 @@ def _lsb_private(prot, x: PondPrivateTensor):
 	r_raw = r0 + r1
 
 	# print(r_raw)
-	print('*' * 40)
-	print('*' * 40)
-	print('*' * 40)
 	rbits_raw = r_raw.bits(factory=prime_dtype)
 	rbits = prot._share_and_wrap(rbits_raw, False)
 
@@ -806,6 +816,7 @@ def _maxpool2d_public(prot: Pond, x: PondPublicTensor,
 	"""Logic for performing maxpool2d on public input."""
 	with tf.name_scope('maxpool2d'):
 		y_on_0, y_on_1, reshape_to = _im2col(prot, x, pool_size, strides, padding)
+
 		im2col = PondPublicTensor(prot, y_on_0, y_on_1, x.is_scaled)
 		i2c_max = im2col.reduce_max(axis=0)
 		result = i2c_max.reshape(reshape_to).transpose([2, 3, 0, 1])
@@ -830,8 +841,9 @@ def _maxpool2d_private(prot: Pond,
 
 	im2col = PondPrivateTensor(prot, y_on_0, y_on_1, x.is_scaled)
 	i2c_max = im2col.reduce_max(axis=0)
-	# print('reshape_to')
-	# print(i2c_max)
+	# print('_maxpool2d_private')
+	# print('im2col\n',im2col.reveal().value_on_0.value)
+	# print('i2c_max',i2c_max.reveal().value_on_0.value)
 	# input()
 	result = i2c_max.reshape(reshape_to).transpose([2, 3, 0, 1])
 	return result
@@ -878,6 +890,7 @@ def _cast_backing_private(prot, x: PondPrivateTensor, backing_dtype):
 
 	x0, x1 = x.unwrapped
 
+	print('_cast_backing_private')
 
 	# with tf.name_scope("cast_backing"):
 
@@ -886,5 +899,9 @@ def _cast_backing_private(prot, x: PondPrivateTensor, backing_dtype):
 
 	# with tf.device(prot.server_1.device_name):
 	y1 = x1.cast(backing_dtype)
-
-	return PondPrivateTensor(prot, y0, y1, x.is_scaled)
+	res = PondPrivateTensor(prot, y0, y1, x.is_scaled)
+	# print(y0.value)
+	# print(y1.value)
+	# print(res.reveal().value_on_0.value)
+	# input()
+	return res

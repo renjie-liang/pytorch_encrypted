@@ -170,13 +170,16 @@ def odd_factory(NATIVE_TYPE):	# pylint: disable=invalid-name
 		def sub(self, other):
 			"""Subtract other from this tensor."""
 			x, y = _lift(self, other)
+
 			bitlength = math.ceil(math.log2(master_factory.modulus))
 
 			x_value = x.value
 			y_value = y.value
 			z = x_value - y_value
-			wrapped_around = _lessthan_as_unsigned(-2 - y_value, x_value, bitlength)
-			z += wrapped_around
+			wrapped_around = _lessthan_as_unsigned(x_value, y_value, bitlength)
+			z -= wrapped_around
+			print('sub')
+			print(z)
 
 			return OddDenseTensor(z)
 
@@ -273,7 +276,6 @@ def odd_factory(NATIVE_TYPE):	# pylint: disable=invalid-name
 		### there is not compete by author
 		if isinstance(x, OddTensor):
 			if isinstance(y, int):
-				print('ccc')
 				return x, x.factory.tensor(np.array([y]))
 		if isinstance(y, OddTensor):
 			if isinstance(x, int):

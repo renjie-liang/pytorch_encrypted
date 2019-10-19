@@ -1497,7 +1497,7 @@ class Pond(Protocol):
 		func_name = "_{}_{}".format(base_name, suffix)
 
 		# print(suffix)
-		print(func_name)
+		# print(func_name)
 		# input()
 		if container is None:
 			container = _THISMODULE
@@ -2636,6 +2636,14 @@ def _reveal_private(prot, x):
 	assert isinstance(x, PondPrivateTensor), type(x)
 	x0, x1 = x.unwrapped
 	z_on_0 = x0 + x1
+	# print('_reveal_private')
+	# print(prot)
+	# print(x)
+	# print(x0)
+	# print(x0.value)
+	# print(x1.value)
+	# print(z_on_0.value)
+	# input()
 	# z_on_0.to(prot.server_0.device_name)
 	z_on_1 = x0 + x1
 	# z_on_1.to(prot.server_1.device_name)

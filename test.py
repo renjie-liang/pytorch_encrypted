@@ -247,8 +247,9 @@ set_protocol(prot)
 ## test MaxPooling2D 
 ## debug  Only SecureNN supports Max Pooling
 from torch_e.layers.pooling import MaxPooling2D
-batch_size, in_channels, h_in, w_in = 1, 1, 8, 8
+batch_size, in_channels, h_in, w_in = 1, 1, 4, 4
 input_shape = [batch_size, in_channels, h_in, w_in]
+np.random.seed(0)
 x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
 
 D = MaxPooling2D(input_shape = input_shape,
@@ -256,7 +257,7 @@ D = MaxPooling2D(input_shape = input_shape,
 				strides = None,
 				padding ="SAME", channels_first = True)
 
-# print(D.get_output_shape())
+print(D.get_output_shape())
 private_x = prot.private_tensor(x)
 pool_private_x = D.forward(private_x)
 
@@ -265,3 +266,14 @@ print(temp.value_on_0.value)
 
 temp = private_x.reveal()
 print(temp.value_on_0.value)
+
+### test odd tensor
+# from torch_e.protocol.securenn.odd_tensor import oddint64_factory
+# x = oddint64_factory.tensor(torch.tensor([2, -2], dtype=torch.int64))
+# y = oddint64_factory.tensor(torch.tensor([3, 3], dtype=torch.int64))
+# z = oddint64_factory.tensor(torch.tensor([3, 2, 1, 0, -1, -2], dtype=torch.int64))
+# z1 = x + y
+# z2 = x - y
+# print(z1.value)
+# print(z2.value)
+# # 
