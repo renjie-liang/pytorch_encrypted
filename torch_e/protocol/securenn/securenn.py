@@ -165,6 +165,7 @@ class SecureNN(Pond):
 
 		:param PondTensor x: The tensor to take the least significant bit of.
 		"""
+
 		return self.dispatch('lsb', x, container=_thismodule)
 
 	@memoize
@@ -195,6 +196,7 @@ class SecureNN(Pond):
 		"""
 		#with tf.name_scope('is_negative'):
 			# NOTE MSB is 1 iff xi < 0
+
 		return self.msb(x)
 
 	# @memoize
@@ -268,7 +270,8 @@ class SecureNN(Pond):
 		:param PondTensor y: The tensor to check against.
 		"""
 		#with tf.name_scope('greater'):
-		return self.is_negative(y - x)
+		res = y - x
+		return self.is_negative(res)
 
 	# @memoize
 	# def greater_equal(self, x: PondTensor, y: PondTensor) -> PondTensor:
@@ -331,7 +334,7 @@ class SecureNN(Pond):
 		# # print('choice_bit')
 		# res = res * choice_bit
 		# res = res + x
-		
+
 		return (y - x) *choice_bit + x
 
 	@memoize
@@ -608,14 +611,7 @@ def _lsb_private(prot, x: PondPrivateTensor):
 	out_dtype = prot.tensor_factory # native_factory
 	prime_dtype = prot.prime_factory # native_factory
 
-	print("_lsb_private")
-	print(odd_dtype)
-	print(odd_dtype.native_type)	
-	print(out_dtype)
-	print(out_dtype.native_type)
-	print(prime_dtype)
-	print(prime_dtype.native_type)
-	input()
+	# print("_lsb_private")
 
 	assert odd_dtype.modulus % 2 == 1
 	# needed for security because of `r` masking
@@ -641,6 +637,8 @@ def _lsb_private(prot, x: PondPrivateTensor):
 
 	# blind and reveal
 	c = (x + r).reveal()
+
+	# print('c1',c.value_on_0.value)
 	c = prot.cast_backing(c, out_dtype)
 	c.is_scaled = False
 
@@ -657,11 +655,19 @@ def _lsb_private(prot, x: PondPrivateTensor):
 
 	# with tf.name_scope('unblind'):
 	gamma = prot.bitwise_xor(
-			greater_xor_beta, prot.cast_backing(beta, out_dtype))
+		greater_xor_beta, prot.cast_backing(beta, out_dtype))
 	delta = prot.bitwise_xor(rlsb, clsb)
 	alpha = prot.bitwise_xor(gamma, delta)
 
 	assert alpha.backing_dtype is out_dtype
+
+	# print('beta_raw',beta_raw.value)
+	# print('r',r.reveal().value_on_0.value)
+	# print('x',x.reveal().value_on_0.value)
+	# print('c',c.value_on_0.value)
+
+
+
 	return alpha
 
 
@@ -704,10 +710,23 @@ def _private_compare(prot,
 	s_bits = prot.bits(s, factory=prime_dtype)
 	assert s_bits.shape[-1] == bit_length
 
+	# print('r ',r.value_on_0.value)
+	# print('beta ',beta.value_on_0.value)
+	# print('s ',s.value_on_0.value)
+	# input()
+
 	# compute w_sum
 	w_bits = prot.bitwise_xor(x_bits, s_bits)
 	w_sum = prot.cumsum(w_bits, axis=-1, reverse=True, exclusive=True)
 	assert w_sum.backing_dtype == prime_dtype
+
+	# print(x_bits)
+	# print(s_bits)
+	# print(w_bits)
+	# print('x_bits ',x_bits.reveal().value_on_0.value)
+	# print('s_bits ',s_bits.value_on_0.value)
+	# print('w_bits ',w_bits.reveal().value_on_0.value)
+	# input()
 
 	# compute c, ignoring edge cases at first
 	sign = prot.select(beta, 1, -1)
@@ -732,9 +751,18 @@ def _private_compare(prot,
 
 	c_edge_case_raw = prime_dtype.tensor(c_const)
 	c_edge_case = prot._share_and_wrap(c_edge_case_raw, False)
-
 	c = prot.select(edge_cases, c_except_edge_case, c_edge_case)
+
+	# print('beta ',beta.value_on_0.value)
+	# print('edge_cases ',edge_cases.value_on_0.value)
+	# print('w_bits ',w_bits.reveal().value_on_0.value)
+	print('w_sum ',w_sum.reveal().value_on_0.value)
+	# print('s ',s.value_on_0.value)
+	input()
+
 	assert c.backing_dtype == prime_dtype
+
+
 
 		# with tf.name_scope('zero_search'):
 
@@ -747,6 +775,8 @@ def _private_compare(prot,
 	c_masked = c * mask
 	assert c_masked.backing_dtype == prime_dtype
 
+
+
 	# TODO[Morten] permute
 
 	# reconstruct masked values on server 2 to find entries with zeros
@@ -758,8 +788,13 @@ def _private_compare(prot,
 
 	rows_with_zeros = zeros.reduce_sum(axis=-1)
 	# reshare result
+
+
 	result = prot._share_and_wrap(rows_with_zeros, False)
 	assert result.backing_dtype.native_type == out_dtype.native_type
+	print('result ',result.reveal().value_on_0.value)
+	# print('s ',s.value_on_0.value)
+	input()
 
 	return result
 

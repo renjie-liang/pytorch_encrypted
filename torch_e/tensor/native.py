@@ -193,7 +193,9 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		def bits(self, factory=None) -> AbstractTensor:
 			factory = factory or FACTORY
 			if EXPLICIT_MODULUS is None:
-				return factory.tensor(binarize(self.value))
+				res =  factory.tensor(binarize(self.value))
+				return res
+
 
 			bitsize = bitsize = math.ceil(math.log2(EXPLICIT_MODULUS))
 			return factory.tensor(binarize(self.value % EXPLICIT_MODULUS, bitsize))
@@ -336,11 +338,25 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			return DenseTensor(value)
 
 		def cumsum(self, axis, exclusive, reverse):
-			# value = tf.cumsum(self.value, axis=axis, exclusive=exclusive,reverse=reverse)
-			value = torch.cumsum(self.value, dim=axis, out=None, dtype=None)
-			if EXPLICIT_MODULUS is not None:
-				value %= EXPLICIT_MODULUS
-			return DenseTensor(value)
+			
+			if exclusive is True and reverse is True:
+				pad = torch.zeros_like(self.value).sum(dim = axis)
+				pad.unsqueeze_(dim = axis)
+				temp = torch.cat([self.value, pad], dim = axis)
+				temp  = torch.flip(temp ,dims = [axis])
+				temp = torch.cumsum(temp, dim = axis)
+				temp  = torch.flip(temp ,dims = [axis])
+				split_size = temp.size(-1) -1
+				temp = torch.split(temp,split_size_or_sections =split_size, dim = -1)
+				temp = temp[0]
+
+				return  DenseTensor(temp)
+			else:
+				raise NotImplementedError
+
+			# if EXPLICIT_MODULUS is not None:
+			# 	value %= EXPLICIT_MODULUS
+			# return DenseTensor(value)
 
 		def equal_zero(self, factory=None):
 			factory = factory or FACTORY
