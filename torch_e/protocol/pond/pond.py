@@ -283,72 +283,45 @@ class Pond(Protocol):
 
 # 		return PondPrivatePlaceholder(self, x0, x1, apply_scaling)
 
-# 	def define_public_variable(
-# 			self,
-# 			initial_value,
-# 			apply_scaling: bool = True,
-# 			name: Optional[str] = None,
-# 			factory: Optional[AbstractFactory] = None,
-# 	):
-# 		# pylint: disable=line-too-long
-# 		"""
-# 		define_public_variable(initial_value, apply_scaling, name, factory) -> PondPublicVariable
+	def define_public_variable(
+			self,
+			initial_value,
+			apply_scaling: bool = True,
+			name: Optional[str] = None,
+			factory: Optional[AbstractFactory] = None,
+	):
 
-# 		Define a public variable.
+		assert isinstance(
+				initial_value, (np.ndarray, torch.Tensor, PondPublicTensor)), type(initial_value)
 
-# 		This is like defining a variable in tensorflow except it creates one that
-# 		can be used by the protocol.
+		factory = factory or self.tensor_factory
 
-# 		For most cases, you can think of this as the same as the one from
-# 		TensorFlow and you don't generally need to consider the difference.
 
-# 		For those curious, under the hood, the major difference is that this
-# 		function will pin your data to a specific device which will be used to
-# 		optimize the graph later on.
+		if isinstance(initial_value, np.ndarray):
+			v = self._encode(initial_value, apply_scaling)
+			v_on_0, v_on_1 = v, v
 
-# 		:see: tf.Variable
+			# elif isinstance(initial_value, tf.Tensor):
+			# 	inttype = factory.native_type
+			# 	v = self._encode(initial_value, apply_scaling, tf_int_type=inttype)
+			# 	v_on_0, v_on_1 = v, v
 
-# 		:param Union[np.ndarray,tf.Tensor,PondPublicTensor] initial_value: The
-# 				initial value.
-# 		:param bool apply_scaling: Whether or not to scale the value.
-# 		:param str name: What name to give to this node in the graph.
-# 		:param AbstractFactory factory: Which tensor type to represent this value
-# 				with.
-# 		"""
-# 		# pylint: enable=line-too-long
-# 		assert isinstance(
-# 				initial_value, (np.ndarray, tf.Tensor, PondPublicTensor)
-# 		), type(initial_value)
+			# elif isinstance(initial_value, PondPublicTensor):
+			# 	v_on_0, v_on_1 = initial_value.unwrapped
 
-# 		factory = factory or self.tensor_factory
+		else:
+			raise TypeError(("Don't know how to turn {} into a "
+											 "public variable").format(type(initial_value)))
 
-# 		with tf.name_scope("public-var{}".format("-" + name if name else "")):
+			# with tf.device(self.server_0.device_name):
+		x_on_0 = factory.tensor(v_on_0)
 
-# 			if isinstance(initial_value, np.ndarray):
-# 				v = self._encode(initial_value, apply_scaling)
-# 				v_on_0, v_on_1 = v, v
+		# with tf.device(self.server_1.device_name):
+		x_on_1 = factory.tensor(v_on_1)
 
-# 			elif isinstance(initial_value, tf.Tensor):
-# 				inttype = factory.native_type
-# 				v = self._encode(initial_value, apply_scaling, tf_int_type=inttype)
-# 				v_on_0, v_on_1 = v, v
-
-# 			elif isinstance(initial_value, PondPublicTensor):
-# 				v_on_0, v_on_1 = initial_value.unwrapped
-
-# 			else:
-# 				raise TypeError(("Don't know how to turn {} into a "
-# 												 "public variable").format(type(initial_value)))
-
-# 			with tf.device(self.server_0.device_name):
-# 				x_on_0 = factory.variable(v_on_0)
-
-# 			with tf.device(self.server_1.device_name):
-# 				x_on_1 = factory.variable(v_on_1)
-
-# 		x = PondPublicVariable(self, x_on_0, x_on_1, apply_scaling)
-# 		_initializers.append(x.initializer)
-# 		return x
+		x = PondPublicTensor(self, x_on_0, x_on_1, apply_scaling)
+		# _initializers.append(x.initializer)
+		return x
 
 	def define_private_variable(
 			self,
@@ -1841,7 +1814,11 @@ class PondPublicTensor(PondTensor):
 		self.value_on_1 = value_on_1
 
 	def __repr__(self) -> str:
-		return "PondPublicTensor(shape={})".format(self.shape)
+		if self.is_scaled is False:
+			return self.value_on_0
+		else:
+			res = self.value_on_0.value / self.prot.fixedpoint_config.scaling_factor
+			return str(res)
 
 	@property
 	def shape(self):#-> List[int]:

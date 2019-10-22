@@ -259,13 +259,14 @@ x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
 # 				padding ="SAME", channels_first = True)
 
 # print(D.get_output_shape())
-private_x = prot.define_private_variable(x)
+private_x = prot.define_public_variable(x)
 # pool_private_x = D.forward(private_x)
 
 # temp = pool_private_x.reveal()
 # print(temp.value_on_0.value)
 
-temp = private_x.reveal()
+temp = private_x#.reveal()
+print('private_x', temp)
 print('private_x', temp.value_on_0.value)
 print('private_x', temp.value_on_1.value)
 

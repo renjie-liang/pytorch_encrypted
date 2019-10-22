@@ -60,11 +60,11 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 		# 	if isinstance(initial_value, (torch.Tensor, np.ndarray)):
 		# 		return Variable(initial_value)
 
-		# 	if isinstance(initial_value, Tensor):
-		# 		return Variable(initial_value.value)
+			# if isinstance(initial_value, Tensor):
+			# 	return Variable(initial_value.value)
 
-		# 	msg = "Don't know how to handle {}"
-		# 	raise TypeError(msg.format(type(initial_value)))
+			# msg = "Don't know how to handle {}"
+			# raise TypeError(msg.format(type(initial_value)))
 
 		# def placeholder(self, shape):
 		# 	return Placeholder(shape)
