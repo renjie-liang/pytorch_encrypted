@@ -111,7 +111,6 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			maxval = maxval or self.max
 
 			value = torch.randint(low=minval , high = maxval, size = shape, dtype=NATIVE_TYPE)
-
 			return DenseTensor(value)
 
 
@@ -131,7 +130,10 @@ def native_factory(NATIVE_TYPE, EXPLICIT_MODULUS=None):	# pylint: disable=invali
 			# else:
 			# 	sampler = tf.random_uniform
 			sampler = torch.randint
+			
 			value = sampler(low=0 , high = maxval, size = shape, dtype=NATIVE_TYPE)
+			value = torch.tensor([[1,1,0,0]])
+			value.to(torch.int64)
 			return DenseTensor(value)
 
 		def sample_bits(self, shape):

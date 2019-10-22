@@ -105,20 +105,20 @@ class SecureNN(Pond):
 		# with tf.name_scope('bitwise_and'):
 		return x * y
 
-	# @memoize
-	# def bitwise_or(self, x: 'PondTensor', y: 'PondTensor') -> 'PondTensor':
-	# 	"""
-	# 	bitwise_or(x, y) -> PondTensor
+	@memoize
+	def bitwise_or(self, x: 'PondTensor', y: 'PondTensor') -> 'PondTensor':
+		"""
+		bitwise_or(x, y) -> PondTensor
 
-	# 	Computes the bitwise `OR` of the given inputs, :math:`f(x,y) = x + y - xy`.
+		Computes the bitwise `OR` of the given inputs, :math:`f(x,y) = x + y - xy`.
 
-	# 	:param PondTensor x: Input tensor.
-	# 	:param PondTensor y: Input tensor.
-	# 	"""
-	# 	assert not x.is_scaled, "Input is not supposed to be scaled"
-	# 	assert not y.is_scaled, "Input is not supposed to be scaled"
-	# 	with tf.name_scope('bitwise_or'):
-	# 		return x + y - self.bitwise_and(x, y)
+		:param PondTensor x: Input tensor.
+		:param PondTensor y: Input tensor.
+		"""
+		assert not x.is_scaled, "Input is not supposed to be scaled"
+		assert not y.is_scaled, "Input is not supposed to be scaled"
+		with tf.name_scope('bitwise_or'):
+			return x + y - self.bitwise_and(x, y)
 
 	@memoize
 	def bitwise_xor(self, x: 'PondTensor', y: 'PondTensor') -> 'PondTensor':
@@ -133,6 +133,7 @@ class SecureNN(Pond):
 		assert not x.is_scaled, "Input is not supposed to be scaled"
 		assert not y.is_scaled, "Input is not supposed to be scaled"
 		#with tf.name_scope('bitwise_xor'):
+
 		return x + y - self.bitwise_and(x, y) * 2
 
 	@memoize
@@ -154,7 +155,11 @@ class SecureNN(Pond):
 		# print(x.reveal().value_on_0.value)
 		# print(x+x)
 		# input()
-		return self.lsb(x + x)
+		res = x + x
+		print('x0', x.reveal().value_on_0.value)
+		print('res0', res.reveal().value_on_0.value)
+
+		return self.lsb(res)
 
 	@memoize
 	def lsb(self, x: PondTensor) -> PondTensor:
@@ -624,8 +629,16 @@ def _lsb_private(prot, x: PondPrivateTensor):
 	# with tf.device(prot.server_2.device_name):
 	r0 = odd_dtype.sample_uniform(x.shape)
 	r1 = odd_dtype.sample_uniform(x.shape)
+	# value = torch.tensor([123,456,789,-123])
+	# value.to(torch.int64)
+
+	# return DenseTensor(value)
+
+
 	r = PondPrivateTensor(prot, r0, r1, False)
 	r_raw = r0 + r1
+
+
 
 	# print(r_raw)
 	rbits_raw = r_raw.bits(factory=prime_dtype)
@@ -649,6 +662,20 @@ def _lsb_private(prot, x: PondPrivateTensor):
 	# with tf.device(server.device_name):
 	beta_raw = prime_dtype.sample_bits(x.shape)
 	beta = PondPublicTensor(prot, beta_raw, beta_raw, is_scaled=False)
+
+	print('beta0 ',beta.value_on_0.value)
+	print('beta1 ',beta.value_on_1.value)
+	print('r0',r0.value)
+	print('r1',r1.value)
+	print('r0 ',r.reveal().value_on_0.value)
+	print('r1 ',r.reveal().value_on_1.value)
+	print('x0 ',x.reveal().value_on_0.value)
+	print('x1 ',x.reveal().value_on_1.value)
+	print('c0 ',c.value_on_0.value)
+	print('c1 ',c.value_on_1.value)
+
+	input()
+
 
 	greater_xor_beta = _private_compare(prot, rbits, c, beta)
 	clsb = prot.lsb(c)
@@ -706,32 +733,21 @@ def _private_compare(prot,
 		# with tf.name_scope('bit_comparisons'):
 
 	# use either r or t = r + 1 according to beta
+
 	s = prot.select(prot.cast_backing(beta, out_dtype), r, r + 1)
 	s_bits = prot.bits(s, factory=prime_dtype)
-	assert s_bits.shape[-1] == bit_length
 
-	# print('r ',r.value_on_0.value)
-	# print('beta ',beta.value_on_0.value)
-	# print('s ',s.value_on_0.value)
-	# input()
-
-	# compute w_sum
 	w_bits = prot.bitwise_xor(x_bits, s_bits)
 	w_sum = prot.cumsum(w_bits, axis=-1, reverse=True, exclusive=True)
-	assert w_sum.backing_dtype == prime_dtype
-
-	# print(x_bits)
-	# print(s_bits)
-	# print(w_bits)
-	# print('x_bits ',x_bits.reveal().value_on_0.value)
-	# print('s_bits ',s_bits.value_on_0.value)
-	# print('w_bits ',w_bits.reveal().value_on_0.value)
-	# input()
-
-	# compute c, ignoring edge cases at first
 	sign = prot.select(beta, 1, -1)
+
 	sign = prot.expand_dims(sign, axis=-1)
 	c_except_edge_case = (s_bits - x_bits) * sign + 1 + w_sum
+
+
+	# print('c_except_edge_case ',c_except_edge_case.reveal().value_on_0.value)
+
+	# print('s_bits ',s_bits.value_on_0.value)
 
 	assert c_except_edge_case.backing_dtype == prime_dtype
 
@@ -755,10 +771,8 @@ def _private_compare(prot,
 
 	# print('beta ',beta.value_on_0.value)
 	# print('edge_cases ',edge_cases.value_on_0.value)
-	# print('w_bits ',w_bits.reveal().value_on_0.value)
-	print('w_sum ',w_sum.reveal().value_on_0.value)
-	# print('s ',s.value_on_0.value)
-	input()
+	# print('c ',c.reveal().value_on_0.value)
+
 
 	assert c.backing_dtype == prime_dtype
 

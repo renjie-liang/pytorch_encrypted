@@ -357,28 +357,7 @@ class Pond(Protocol):
 			name: Optional[str] = None,
 			factory: Optional[AbstractFactory] = None,
 	):
-		# pylint: disable=line-too-long
-		"""
-		define_private_variable(initial_value, apply_scaling, name, factory) -> PondPrivateVariable
 
-		Define a private variable.
-
-		This will take the passed value and construct shares that will be split up
-		between those involved in the computation.
-
-		For example, in a two party architecture, this will split the value into
-		two sets of shares and transfer them between each party in a secure manner.
-
-		:see tf.Variable
-
-		:param Union[np.ndarray,tf.Tensor,PondPublicTensor] initial_value: The
-				initial value.
-		:param bool apply_scaling: Whether or not to scale the value.
-		:param str name: What name to give to this node in the graph.
-		:param AbstractFactory factory: Which tensor type to represent this value
-				with.
-		"""
-		# pylint: enable=line-too-long
 		init_val_types = (np.ndarray, torch.Tensor, PondPublicTensor, PondPrivateTensor)
 		assert isinstance(initial_value, init_val_types), type(initial_value)
 
@@ -388,21 +367,23 @@ class Pond(Protocol):
 		if isinstance(initial_value, np.ndarray):
 			v = factory.tensor(self._encode(initial_value, apply_scaling))
 			v0, v1 = self._share(v)
+			print(v.value)
+			print(v0.value)
+			print(v1.value)
+		# elif isinstance(initial_value, torch.Tensor):
+		# 	v = factory.tensor(self._encode(initial_value, apply_scaling, tf_int_type=factory.native_type))
+		# 	v0, v1 = self._share(v)
 
-		elif isinstance(initial_value, torch.Tensor):
-			v = factory.tensor(self._encode(initial_value, apply_scaling, tf_int_type=factory.native_type))
-			v0, v1 = self._share(v)
+		# elif isinstance(initial_value, PondPublicTensor):
+		# 	v_on_0, _ = initial_value.unwrapped
+		# 	with tf.device(self.server_0.device_name):
+		# 		# NOTE[Morten]
+		# 		# we can alternatively avoid transfer of v1 from server0 and server1
+		# 		# by having the crypto producer (pre-)generate sharings of zero
+		# 		v0, v1 = self._share(v_on_0)
 
-		elif isinstance(initial_value, PondPublicTensor):
-			v_on_0, _ = initial_value.unwrapped
-			with tf.device(self.server_0.device_name):
-				# NOTE[Morten]
-				# we can alternatively avoid transfer of v1 from server0 and server1
-				# by having the crypto producer (pre-)generate sharings of zero
-				v0, v1 = self._share(v_on_0)
-
-		elif isinstance(initial_value, PondPrivateTensor):
-			v0, v1 = initial_value.unwrapped
+		# elif isinstance(initial_value, PondPrivateTensor):
+		# 	v0, v1 = initial_value.unwrapped
 
 		else:
 			raise TypeError(("Don't know how to turn {} " "into private variable").format(type(initial_value)))
@@ -418,52 +399,6 @@ class Pond(Protocol):
 		# _initializers.append(x.initializer)
 		return x
 
-	def private_tensor(
-			self,
-			initial_value,
-			apply_scaling: bool = True,
-			name: Optional[str] = None,
-			factory: Optional[AbstractFactory] = None,
-	):
-
-		init_val_types = (np.ndarray, torch.Tensor, PondPublicTensor, PondPrivateTensor)
-		assert isinstance(initial_value, init_val_types), type(initial_value)
-
-		factory = factory or self.tensor_factory
-
-
-		if isinstance(initial_value, np.ndarray):
-			v = factory.tensor(self._encode(initial_value, apply_scaling))
-			v0, v1 = self._share(v)
-
-		elif isinstance(initial_value, torch.Tensor):
-			v = factory.tensor(self._encode(initial_value, apply_scaling, tf_int_type=factory.native_type))
-			v0, v1 = self._share(v)
-
-		elif isinstance(initial_value, PondPublicTensor):
-			v_on_0, _ = initial_value.unwrapped
-			with tf.device(self.server_0.device_name):
-				# NOTE[Morten]
-				# we can alternatively avoid transfer of v1 from server0 and server1
-				# by having the crypto producer (pre-)generate sharings of zero
-				v0, v1 = self._share(v_on_0)
-
-		elif isinstance(initial_value, PondPrivateTensor):
-			v0, v1 = initial_value.unwrapped
-
-		else:
-			raise TypeError(("Don't know how to turn {} " "into private variable").format(type(initial_value)))
-
-		# x0 = factory.tensor(v0)
-		x0 = v0
-		# x0.to(self.server_0.device_name)
-		# x1 = factory.tensor(v1)
-		x1 = v1
-		# x1.to(self.server_1.device_name)
-
-		x = PondPrivateTensor(self, x0, x1, apply_scaling)
-		# _initializers.append(x.initializer)
-		return x
 # 	def fifo_queue(self, capacity, shape, shared_name):
 # 		return AdditiveFIFOQueue(
 # 				protocol=self,
@@ -803,30 +738,24 @@ class Pond(Protocol):
 		of same type as input to allow function to be used for constants.
 		"""
 		# we first scale as needed
-		# if apply_scaling:
-		# 	scaled = rationals * self.fixedpoint_config.scaling_factor
-		# else:
-		# 	scaled = rationals
-		scaled = rationals
-
-
-
+		if apply_scaling:
+			scaled = rationals * self.fixedpoint_config.scaling_factor
+		else:
+			scaled = rationals
 
 		# and then we round to integers
-
 		if isinstance(scaled, np.ndarray):
 			integers = scaled.astype(np.int64)
 
-		elif isinstance(scaled, torch.Tensor):
-			tf_int_type = tf_int_type or (scaled.dtype if scaled.dtype in TF_INT_TYPES else self.tensor_factory.native_type)
-			assert tf_int_type in TF_INT_TYPES
-			integers = torch.to(tf_int_type)
+		# elif isinstance(scaled, torch.Tensor):
+		# 	tf_int_type = tf_int_type or (scaled.dtype if scaled.dtype in TF_INT_TYPES else self.tensor_factory.native_type)
+		# 	assert tf_int_type in TF_INT_TYPES
+		# 	integers = torch.to(tf_int_type)
 
 		else:
 			raise TypeError("Don't know how to encode {}".format(type(rationals)))
 
-		assert type(rationals) == type(integers), (type(rationals), # pylint: disable=unidiomatic-typecheck
-																type(integers))
+		assert type(rationals) == type(integers), (type(rationals), type(integers))
 		return integers
 
 # 	@memoize
@@ -849,14 +778,6 @@ class Pond(Protocol):
 			self,
 			secret: AbstractTensor,
 	) -> Tuple[AbstractTensor, AbstractTensor]:
-		"""Secret-share an AbstractTensor.
-
-		Args:
-			secret: `AbstractTensor`, the tensor to share.
-
-		Returns:
-			A pair of `AbstractTensor`, the shares.
-		"""
 
 		share0 = secret.factory.sample_uniform(secret.shape)
 		share1 = secret - share0
@@ -2680,24 +2601,24 @@ def _add_public_public(prot, x, y):
 	return PondPublicTensor(prot, z_on_0, z_on_1, x.is_scaled)
 
 
-# def _add_public_private(prot, x, y):
-# 	assert isinstance(x, PondPublicTensor), type(x)
-# 	assert isinstance(y, PondPrivateTensor), type(y)
-# 	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
-# 																			"{} {}").format(x.is_scaled, y.is_scaled)
+def _add_public_private(prot, x, y):
+	assert isinstance(x, PondPublicTensor), type(x)
+	assert isinstance(y, PondPrivateTensor), type(y)
+	assert x.is_scaled == y.is_scaled, ("Cannot mix different encodings: "
+																			"{} {}").format(x.is_scaled, y.is_scaled)
 
-# 	x_on_0, _ = x.unwrapped
-# 	y0, y1 = y.unwrapped
+	x_on_0, _ = x.unwrapped
+	y0, y1 = y.unwrapped
 
-# 	with tf.name_scope("add"):
+	with tf.name_scope("add"):
 
-# 		with tf.device(prot.server_0.device_name):
-# 			z0 = x_on_0 + y0
+		with tf.device(prot.server_0.device_name):
+			z0 = x_on_0 + y0
 
-# 		with tf.device(prot.server_1.device_name):
-# 			z1 = y1
+		with tf.device(prot.server_1.device_name):
+			z1 = y1
 
-# 	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
+	return PondPrivateTensor(prot, z0, z1, x.is_scaled)
 
 
 # def _add_public_masked(prot, x, y):

@@ -74,6 +74,9 @@ def odd_factory(NATIVE_TYPE):	# pylint: disable=invalid-name
 			# 	sampler = tf.random_uniform
 			sampler = torch.randint
 			value = _construct_value_from_sampler(sampler=sampler, shape=shape)
+			value = torch.tensor([[123,456,789,-123]])
+			value.to(torch.int64)
+					
 			return OddDenseTensor(value)
 
 

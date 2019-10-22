@@ -243,6 +243,7 @@ prot.server_0.device_name = 'cpu'
 prot.server_1.device_name = 'cpu'
 prot.triple_source.device_name = 'cpu'
 set_protocol(prot)
+print(prot.fixedpoint_config.precision_fractional)
 
 ## test MaxPooling2D 
 ## debug  Only SecureNN supports Max Pooling
@@ -252,20 +253,21 @@ input_shape = [batch_size, in_channels, h_in, w_in]
 np.random.seed(0)
 x = np.random.randint(low = 0, high = 100, size = input_shape, dtype = np.int64)
 
-D = MaxPooling2D(input_shape = input_shape,
-				pool_size = 2, 
-				strides = None,
-				padding ="SAME", channels_first = True)
+# D = MaxPooling2D(input_shape = input_shape,
+# 				pool_size = 2, 
+# 				strides = None,
+# 				padding ="SAME", channels_first = True)
 
-print(D.get_output_shape())
-private_x = prot.private_tensor(x)
-pool_private_x = D.forward(private_x)
+# print(D.get_output_shape())
+private_x = prot.define_private_variable(x)
+# pool_private_x = D.forward(private_x)
 
-temp = pool_private_x.reveal()
-print(temp.value_on_0.value)
+# temp = pool_private_x.reveal()
+# print(temp.value_on_0.value)
 
 temp = private_x.reveal()
-print(temp.value_on_0.value)
+print('private_x', temp.value_on_0.value)
+print('private_x', temp.value_on_1.value)
 
 ### test odd tensor
 # from torch_e.protocol.securenn.odd_tensor import oddint64_factory
